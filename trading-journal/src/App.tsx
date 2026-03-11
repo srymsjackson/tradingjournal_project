@@ -214,6 +214,11 @@ function App() {
       confidence: lastTrade.confidence,
       notes: lastTrade.notes,
       ruleFollowed: lastTrade.ruleFollowed,
+      setupWasValid: lastTrade.setupWasValid,
+      waitedForConfirmation: lastTrade.waitedForConfirmation,
+      riskWasDefined: lastTrade.riskWasDefined,
+      followedPlan: lastTrade.followedPlan,
+      brokeRules: lastTrade.brokeRules,
       emotionTags: [...lastTrade.emotionTags],
       mistakeTags: [...lastTrade.mistakeTags],
     })
@@ -221,6 +226,11 @@ function App() {
 
   const removeTrade = (id: string) => {
     persistTrades(trades.filter((trade) => trade.id !== id))
+  }
+
+  const updateTrade = (updatedTrade: Trade) => {
+    const nextTrades = trades.map((trade) => (trade.id === updatedTrade.id ? updatedTrade : trade))
+    persistTrades(nextTrades)
   }
 
   const exportJson = () => {
@@ -261,6 +271,11 @@ function App() {
         confidence: item.confidence,
         notes: '',
         ruleFollowed: true,
+        setupWasValid: true,
+        waitedForConfirmation: true,
+        riskWasDefined: true,
+        followedPlan: true,
+        brokeRules: false,
         emotionTags: [],
         mistakeTags: [],
         pnl,
@@ -333,7 +348,7 @@ function App() {
             onExportJson={exportJson}
           />
 
-          <TradeHistoryTable trades={filteredTrades} onDeleteTrade={removeTrade} />
+          <TradeHistoryTable trades={filteredTrades} onDeleteTrade={removeTrade} onUpdateTrade={updateTrade} />
         </section>
       </main>
     </>

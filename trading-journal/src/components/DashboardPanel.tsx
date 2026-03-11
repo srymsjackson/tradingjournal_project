@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -6,8 +7,6 @@ import {
   Legend,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -63,6 +62,9 @@ function DashboardPanel({
   onClearFilters,
   onExportJson,
 }: DashboardPanelProps) {
+  const [performanceLens, setPerformanceLens] = useState<'SESSION' | 'DAY' | 'SIDE'>('SESSION')
+  const [behaviorLens, setBehaviorLens] = useState<'EMOTION' | 'MISTAKE'>('EMOTION')
+
   const timeOptions: Array<{ label: string; value: TimeFilterPreset }> = [
     { label: 'Today', value: 'TODAY' },
     { label: 'This Week', value: 'THIS_WEEK' },
@@ -115,6 +117,11 @@ function DashboardPanel({
     stats.totalTrades > 0
       ? `${Math.abs(stats.worstTrade) <= Math.max(stats.bestTrade, 1) ? 'Drawdown contained' : 'Review outlier loss'}`
       : 'Drawdown watch appears here.'
+
+  const bestSession = chartData.sessionPerformance.slice().sort((a, b) => b.netPnl - a.netPnl)[0]
+  const weakestSession = chartData.sessionPerformance.slice().sort((a, b) => a.netPnl - b.netPnl)[0]
+  const followedRules = chartData.rulePerformance.find((item) => item.bucket === 'Followed')
+  const brokeRules = chartData.rulePerformance.find((item) => item.bucket === 'Broken')
 
   return (
     <section className="panel dashboard-panel">
@@ -241,6 +248,46 @@ function DashboardPanel({
         </ul>
       </div>
 
+      <div className="session-summary-panel">
+        <h4>Session Performance Snapshot</h4>
+        {chartData.sessionPerformance.length > 0 ? (
+          <div className="session-summary-grid">
+            <article>
+              <p>Best Session</p>
+              <h5>{bestSession?.session || 'N/A'}</h5>
+              <small className={(bestSession?.netPnl || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(bestSession?.netPnl || 0)}</small>
+            </article>
+            <article>
+              <p>Weakest Session</p>
+              <h5>{weakestSession?.session || 'N/A'}</h5>
+              <small className={(weakestSession?.netPnl || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(weakestSession?.netPnl || 0)}</small>
+            </article>
+          </div>
+        ) : (
+          <p className="empty-copy">Log trades across sessions to identify where your edge is strongest.</p>
+        )}
+      </div>
+
+      <div className="session-summary-panel">
+        <h4>Discipline Edge Snapshot</h4>
+        {chartData.rulePerformance.length > 0 ? (
+          <div className="session-summary-grid">
+            <article>
+              <p>Rule-Followed Trades</p>
+              <h5>{followedRules?.trades || 0} trades</h5>
+              <small className={(followedRules?.netPnl || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(followedRules?.netPnl || 0)}</small>
+            </article>
+            <article>
+              <p>Rule-Broken Trades</p>
+              <h5>{brokeRules?.trades || 0} trades</h5>
+              <small className={(brokeRules?.netPnl || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(brokeRules?.netPnl || 0)}</small>
+            </article>
+          </div>
+        ) : (
+          <p className="empty-copy">Tag rule behavior in trades to measure discipline edge.</p>
+        )}
+      </div>
+
       {activeTab === 'overview' && (
         <>
           <div className="stat-grid performance-grid">
@@ -288,26 +335,6 @@ function DashboardPanel({
           </div>
           <div className="chart-grid">
             <article className="chart-card">
-              <h4>Outcome Split</h4>
-              {chartData.outcomePie.length > 0 ? (
-                <div className="chart-shell">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={chartData.outcomePie} dataKey="value" nameKey="name" outerRadius={80} label>
-                        {chartData.outcomePie.map((entry, index) => (
-                          <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <p className="empty-copy">Add trades to render chart data.</p>
-              )}
-            </article>
-            <article className="chart-card">
               <h4>Cumulative Equity Curve</h4>
               {chartData.pnlTrend.length > 0 ? (
                 <div className="chart-shell">
@@ -318,8 +345,31 @@ function DashboardPanel({
                       <YAxis />
                       <Tooltip formatter={tooltipMoneyFormatter} />
                       <Legend />
-                      <Line type="monotone" dataKey="cumulativePnl" stroke="#0d7a52" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="cumulativePnl" stroke="#0d7a52" strokeWidth={3} dot={false} name="Cumulative P&L" />
                     </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="empty-copy">Add trades to render chart data.</p>
+              )}
+            </article>
+            <article className="chart-card">
+              <h4>P&amp;L by Setup</h4>
+              {chartData.setupPnl.length > 0 ? (
+                <div className="chart-shell">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData.setupPnl}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="setup" tick={{ fontSize: 11 }} />
+                      <YAxis />
+                      <Tooltip formatter={tooltipMoneyFormatter} />
+                      <Legend />
+                      <Bar dataKey="netPnl" name="Net P&L">
+                        {chartData.setupPnl.map((entry, index) => (
+                          <Cell key={entry.setup} fill={entry.netPnl >= 0 ? '#118f5f' : CHART_COLORS[(index + 1) % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
@@ -333,43 +383,88 @@ function DashboardPanel({
       {activeTab === 'distribution' && (
         <div className="chart-grid">
           <article className="chart-card">
-            <h4>Win / Loss Distribution</h4>
-            {chartData.outcomePie.length > 0 ? (
+            <div className="chart-title-row">
+              <h4>Performance Context</h4>
+              <div className="mini-toggle">
+                <button type="button" className={`mini-toggle-btn ${performanceLens === 'SESSION' ? 'active' : ''}`} onClick={() => setPerformanceLens('SESSION')}>
+                  Session
+                </button>
+                <button type="button" className={`mini-toggle-btn ${performanceLens === 'DAY' ? 'active' : ''}`} onClick={() => setPerformanceLens('DAY')}>
+                  Day
+                </button>
+                <button type="button" className={`mini-toggle-btn ${performanceLens === 'SIDE' ? 'active' : ''}`} onClick={() => setPerformanceLens('SIDE')}>
+                  Side
+                </button>
+              </div>
+            </div>
+            {(performanceLens === 'SESSION' && chartData.sessionPerformance.length > 0) ||
+            (performanceLens === 'DAY' && chartData.dayOfWeekPerformance.length > 0) ||
+            (performanceLens === 'SIDE' && chartData.sideWinRate.length > 0) ? (
               <div className="chart-shell">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={chartData.outcomePie} dataKey="value" nameKey="name" outerRadius={88} label>
-                      {chartData.outcomePie.map((entry, index) => (
-                        <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
+                  {performanceLens === 'SESSION' ? (
+                    <BarChart data={chartData.sessionPerformance}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="session" tick={{ fontSize: 11 }} />
+                      <YAxis />
+                      <Tooltip formatter={tooltipMoneyFormatter} />
+                      <Legend />
+                      <Bar dataKey="netPnl" name="Net P&L">
+                        {chartData.sessionPerformance.map((entry, index) => (
+                          <Cell key={entry.session} fill={entry.netPnl >= 0 ? '#118f5f' : CHART_COLORS[(index + 2) % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  ) : performanceLens === 'DAY' ? (
+                    <BarChart data={chartData.dayOfWeekPerformance}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip formatter={tooltipMoneyFormatter} />
+                      <Legend />
+                      <Bar dataKey="netPnl" name="Net P&L">
+                        {chartData.dayOfWeekPerformance.map((entry, index) => (
+                          <Cell key={entry.day} fill={entry.netPnl >= 0 ? '#118f5f' : CHART_COLORS[(index + 3) % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  ) : (
+                    <BarChart data={chartData.sideWinRate}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="side" />
+                      <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                      <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
+                      <Legend />
+                      <Bar dataKey="winRate" fill="#0d7a52" name="Win Rate" />
+                    </BarChart>
+                  )}
                 </ResponsiveContainer>
               </div>
             ) : (
-              <p className="empty-copy">Add trades to render chart data.</p>
+              <p className="empty-copy">Add trades to render session, day, and side performance views.</p>
             )}
           </article>
           <article className="chart-card">
-            <h4>Average P&amp;L High vs Low by Symbol</h4>
-            {chartData.symbolPnl.length > 0 ? (
+            <h4>Rule-Followed vs Rule-Broken</h4>
+            {chartData.rulePerformance.length > 0 ? (
               <div className="chart-shell">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData.symbolPnl}>
+                  <BarChart data={chartData.rulePerformance}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="symbol" />
+                    <XAxis dataKey="bucket" />
                     <YAxis />
                     <Tooltip formatter={tooltipMoneyFormatter} />
                     <Legend />
-                    <Bar dataKey="avgPnlHigh" fill="#118f5f" name="Avg P&L High" />
-                    <Bar dataKey="avgPnlLow" fill="#bc3a2e" name="Avg P&L Low" />
+                    <Bar dataKey="netPnl" name="Net P&L">
+                      {chartData.rulePerformance.map((entry) => (
+                        <Cell key={entry.bucket} fill={entry.bucket === 'Followed' ? '#118f5f' : '#bc3a2e'} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <p className="empty-copy">Add trades to render chart data.</p>
+              <p className="empty-copy">Tag discipline fields to unlock rule-performance analysis.</p>
             )}
           </article>
         </div>
@@ -378,7 +473,7 @@ function DashboardPanel({
       {activeTab === 'trend' && (
         <div className="chart-grid single">
           <article className="chart-card">
-            <h4>Daily Net P&amp;L and Cumulative P&amp;L</h4>
+            <h4>Cumulative Equity Curve (Detailed)</h4>
             {chartData.pnlTrend.length > 0 ? (
               <div className="chart-shell large">
                 <ResponsiveContainer width="100%" height="100%">
@@ -401,7 +496,7 @@ function DashboardPanel({
       )}
 
       {activeTab === 'symbols' && (
-        <div className="chart-grid single">
+        <div className="chart-grid">
           <article className="chart-card">
             <h4>Net P&amp;L by Symbol</h4>
             {chartData.symbolPnl.length > 0 ? (
@@ -426,19 +521,43 @@ function DashboardPanel({
             )}
           </article>
           <article className="chart-card">
-            <h4>Top Setups</h4>
-            {insights.setupPerformance.length > 0 ? (
-              <div className="setup-list">
-                {insights.setupPerformance.map((item) => (
-                  <div key={item.setup} className="setup-item">
-                    <p>{item.setup}</p>
-                    <p className={item.netPnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(item.netPnl)}</p>
-                    <small>{item.trades} trades • {item.winRate.toFixed(1)}% win</small>
-                  </div>
-                ))}
+            <div className="chart-title-row">
+              <h4>Behavior Patterns</h4>
+              <div className="mini-toggle">
+                <button type="button" className={`mini-toggle-btn ${behaviorLens === 'EMOTION' ? 'active' : ''}`} onClick={() => setBehaviorLens('EMOTION')}>
+                  Emotions
+                </button>
+                <button type="button" className={`mini-toggle-btn ${behaviorLens === 'MISTAKE' ? 'active' : ''}`} onClick={() => setBehaviorLens('MISTAKE')}>
+                  Mistakes
+                </button>
+              </div>
+            </div>
+            {(behaviorLens === 'EMOTION' && chartData.emotionFrequency.length > 0) || (behaviorLens === 'MISTAKE' && chartData.mistakeFrequency.length > 0) ? (
+              <div className="chart-shell large">
+                <ResponsiveContainer width="100%" height="100%">
+                  {behaviorLens === 'EMOTION' ? (
+                    <BarChart data={chartData.emotionFrequency} layout="vertical" margin={{ left: 12, right: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" allowDecimals={false} />
+                      <YAxis type="category" dataKey="tag" width={95} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(value) => `${Number(value)} trades`} />
+                      <Legend />
+                      <Bar dataKey="count" fill="#0d7a52" name="Tagged Trades" />
+                    </BarChart>
+                  ) : (
+                    <BarChart data={chartData.mistakeFrequency} layout="vertical" margin={{ left: 12, right: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" allowDecimals={false} />
+                      <YAxis type="category" dataKey="tag" width={95} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(value) => `${Number(value)} trades`} />
+                      <Legend />
+                      <Bar dataKey="count" fill="#bc3a2e" name="Tagged Trades" />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
               </div>
             ) : (
-              <p className="empty-copy">Add trades to render setup performance.</p>
+              <p className="empty-copy">Add tags to trades to reveal emotional and mistake patterns.</p>
             )}
           </article>
         </div>

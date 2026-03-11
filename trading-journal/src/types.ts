@@ -37,6 +37,11 @@ export type Trade = {
   confidence: number
   notes: string
   ruleFollowed: boolean
+  setupWasValid: boolean
+  waitedForConfirmation: boolean
+  riskWasDefined: boolean
+  followedPlan: boolean
+  brokeRules: boolean
   emotionTags: string[]
   mistakeTags: string[]
   pnl: number
@@ -62,6 +67,11 @@ export type TradeFormData = {
   confidence: number
   notes: string
   ruleFollowed: boolean
+  setupWasValid: boolean
+  waitedForConfirmation: boolean
+  riskWasDefined: boolean
+  followedPlan: boolean
+  brokeRules: boolean
   emotionTags: string[]
   mistakeTags: string[]
 }
@@ -95,7 +105,13 @@ export type ReviewInsights = {
 }
 
 export type ChartDataSet = {
-  outcomePie: Array<{ name: string; value: number }>
   pnlTrend: Array<{ date: string; netPnl: number; tradeCount: number; cumulativePnl: number; label: string }>
-  symbolPnl: Array<{ symbol: string; netPnl: number; trades: number; avgPnlHigh: number; avgPnlLow: number }>
+  setupPnl: Array<{ setup: string; netPnl: number; trades: number; winRate: number }>
+  symbolPnl: Array<{ symbol: string; netPnl: number; trades: number }>
+  sideWinRate: Array<{ side: 'LONG' | 'SHORT'; winRate: number; trades: number; netPnl: number }>
+  sessionPerformance: Array<{ session: string; netPnl: number; trades: number; winRate: number }>
+  dayOfWeekPerformance: Array<{ day: string; netPnl: number; trades: number; winRate: number }>
+  emotionFrequency: Array<{ tag: string; count: number; winRate: number; netPnl: number }>
+  mistakeFrequency: Array<{ tag: string; count: number; winRate: number; netPnl: number }>
+  rulePerformance: Array<{ bucket: 'Followed' | 'Broken'; trades: number; netPnl: number; winRate: number }>
 }

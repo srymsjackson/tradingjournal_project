@@ -208,6 +208,30 @@ label {
   color: #0d714d;
 }
 
+.discipline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.38rem;
+}
+
+.discipline-chip {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f4f8f5;
+  color: #2e4b3c;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 0.42rem 0.52rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.discipline-chip.active {
+  background: color-mix(in srgb, var(--accent), white 86%);
+  border-color: color-mix(in srgb, var(--accent), white 58%);
+  color: #0d714d;
+}
+
 .toggle-row {
   display: flex;
   justify-content: space-between;
@@ -510,6 +534,50 @@ textarea:focus {
   margin: 0.22rem 0;
 }
 
+.session-summary-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.68rem 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.session-summary-panel h4 {
+  margin: 0 0 0.5rem;
+}
+
+.session-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.session-summary-grid article {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.5rem 0.58rem;
+  background: #fcfffc;
+}
+
+.session-summary-grid p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.session-summary-grid h5 {
+  margin: 0.2rem 0 0.1rem;
+  font-size: 1rem;
+}
+
+.session-summary-grid small {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .export-download-btn {
   width: 50px;
   height: 50px;
@@ -644,6 +712,41 @@ textarea:focus {
 .chart-card h4 {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
+}
+
+.chart-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  margin-bottom: 0.45rem;
+}
+
+.chart-title-row h4 {
+  margin: 0;
+}
+
+.mini-toggle {
+  display: inline-flex;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+}
+
+.mini-toggle-btn {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.2rem 0.58rem;
+  background: #edf3ee;
+  color: #294838;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.mini-toggle-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .chart-shell {
@@ -892,6 +995,177 @@ th {
   font-size: 0.79rem;
 }
 
+.review-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 22, 16, 0.42);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 50;
+  backdrop-filter: blur(2px);
+}
+
+.review-drawer {
+  width: min(620px, 100vw);
+  height: 100vh;
+  background: #f9fcf9;
+  border-left: 1px solid var(--line);
+  box-shadow: -14px 0 36px rgba(8, 24, 17, 0.2);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  animation: drawer-slide-in 0.2s ease;
+}
+
+@keyframes drawer-slide-in {
+  from {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.review-drawer-head {
+  border-bottom: 1px solid var(--line);
+  padding: 0.9rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.review-drawer-head h3 {
+  margin: 0;
+}
+
+.review-drawer-head p {
+  margin: 0.22rem 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.review-drawer-body {
+  overflow-y: auto;
+  padding: 0.86rem 1rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.review-block {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.68rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.review-block h4 {
+  margin: 0;
+}
+
+.review-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.review-metrics-row article {
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 0.4rem 0.48rem;
+}
+
+.review-metrics-row small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.review-metrics-row p {
+  margin: 0.2rem 0 0;
+  font-weight: 700;
+}
+
+.coming-soon-block p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.review-drawer-actions {
+  border-top: 1px solid var(--line);
+  background: #fff;
+  padding: 0.7rem 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.trade-detail-panel {
+  margin-top: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.7rem 0.78rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.trade-detail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.trade-detail-head h4 {
+  margin: 0;
+}
+
+.trade-detail-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.trade-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.trade-detail-grid small,
+.detail-tag-row small,
+.detail-notes small {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.trade-detail-grid p,
+.detail-notes p {
+  margin: 0.18rem 0 0;
+  font-weight: 600;
+}
+
+.detail-tag-row {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.detail-notes {
+  border-top: 1px dashed var(--line);
+  padding-top: 0.42rem;
+}
+
 .pnl-positive {
   color: var(--positive);
   font-weight: 700;
@@ -971,6 +1245,26 @@ th {
   }
 
   .trade-log-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .trade-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .discipline-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-drawer {
+    width: 100vw;
+  }
+
+  .review-metrics-row {
+    grid-template-columns: 1fr;
+  }
+
+  .session-summary-grid {
     grid-template-columns: 1fr;
   }
 }

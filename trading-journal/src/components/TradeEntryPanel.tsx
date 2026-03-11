@@ -99,13 +99,14 @@ function TradeEntryPanel({
           <div className="grid two-col compact-grid">
             <label>
               Session
-              <select value={form.session} onChange={(e) => onUpdateForm('session', e.target.value)} required>
-                {SESSION_OPTIONS.map((session) => (
-                  <option key={session} value={session}>
-                    {session}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                value={form.session}
+                list="session-options"
+                placeholder="Open"
+                onChange={(e) => onUpdateForm('session', e.target.value)}
+                required
+              />
             </label>
             <label>
               Market Condition
@@ -129,6 +130,12 @@ function TradeEntryPanel({
         <datalist id="setup-options">
           {setupOptions.map((setup) => (
             <option key={setup} value={setup} />
+          ))}
+        </datalist>
+
+        <datalist id="session-options">
+          {SESSION_OPTIONS.map((session) => (
+            <option key={session} value={session} />
           ))}
         </datalist>
 
@@ -292,6 +299,25 @@ function TradeEntryPanel({
             <h3>Reflection</h3>
           </div>
 
+          <div className="discipline-grid">
+            <button type="button" className={`discipline-chip ${form.setupWasValid ? 'active' : ''}`} onClick={() => onUpdateForm('setupWasValid', !form.setupWasValid)}>
+              Setup was valid
+            </button>
+            <button
+              type="button"
+              className={`discipline-chip ${form.waitedForConfirmation ? 'active' : ''}`}
+              onClick={() => onUpdateForm('waitedForConfirmation', !form.waitedForConfirmation)}
+            >
+              Waited for confirmation
+            </button>
+            <button type="button" className={`discipline-chip ${form.riskWasDefined ? 'active' : ''}`} onClick={() => onUpdateForm('riskWasDefined', !form.riskWasDefined)}>
+              Risk was defined
+            </button>
+            <button type="button" className={`discipline-chip ${form.followedPlan ? 'active' : ''}`} onClick={() => onUpdateForm('followedPlan', !form.followedPlan)}>
+              Followed plan
+            </button>
+          </div>
+
           <label>
             Notes
             <textarea rows={3} placeholder="Execution notes, emotions, mistakes..." value={form.notes} onChange={(e) => onUpdateForm('notes', e.target.value)} />
@@ -313,6 +339,18 @@ function TradeEntryPanel({
                 onClick={() => onUpdateForm('ruleFollowed', false)}
               >
                 No
+              </button>
+            </div>
+          </div>
+
+          <div className="toggle-row" role="group" aria-label="Broke rules">
+            <span>Broke Rules</span>
+            <div className="toggle-group">
+              <button type="button" className={`toggle-chip ${!form.brokeRules ? 'active' : ''}`} onClick={() => onUpdateForm('brokeRules', false)}>
+                No
+              </button>
+              <button type="button" className={`toggle-chip ${form.brokeRules ? 'active' : ''}`} onClick={() => onUpdateForm('brokeRules', true)}>
+                Yes
               </button>
             </div>
           </div>

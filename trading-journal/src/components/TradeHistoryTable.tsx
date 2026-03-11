@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react'
 import type { Trade } from '../types'
 import { formatDate, formatDuration, formatMoney } from '../utils/tradeUtils'
+import TradeDetailDrawer from './TradeDetailDrawer'
 
 type TradeHistoryTableProps = {
   trades: Trade[]
   onDeleteTrade: (id: string) => void
-  onPrepareTradeReview?: (trade: Trade) => void
+  onUpdateTrade: (trade: Trade) => void
 }
 
 type SortKey = 'date' | 'symbol' | 'side' | 'setup' | 'shares' | 'pnl' | 'durationSec' | 'confidence'
 
-function TradeHistoryTable({ trades, onDeleteTrade, onPrepareTradeReview }: TradeHistoryTableProps) {
+function TradeHistoryTable({ trades, onDeleteTrade, onUpdateTrade }: TradeHistoryTableProps) {
   const [symbolFilter, setSymbolFilter] = useState<string>('ALL')
   const [setupFilter, setSetupFilter] = useState<string>('ALL')
   const [sideFilter, setSideFilter] = useState<'ALL' | 'LONG' | 'SHORT'>('ALL')
@@ -18,6 +19,7 @@ function TradeHistoryTable({ trades, onDeleteTrade, onPrepareTradeReview }: Trad
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null)
+  const [isReviewOpen, setIsReviewOpen] = useState<boolean>(false)
 
   const symbolOptions = useMemo(
     () => Array.from(new Set(trades.map((trade) => trade.symbol.trim().toUpperCase()).filter(Boolean))).sort(),
@@ -58,6 +60,8 @@ function TradeHistoryTable({ trades, onDeleteTrade, onPrepareTradeReview }: Trad
 
     return sortDirection === 'asc' ? sorted : sorted.reverse()
   }, [trades, symbolFilter, setupFilter, sideFilter, outcomeFilter, sortKey, sortDirection])
+
+  const selectedTrade = useMemo(() => trades.find((trade) => trade.id === selectedTradeId) ?? null, [trades, selectedTradeId])
 
   const setSorting = (nextKey: SortKey) => {
     if (sortKey === nextKey) {
@@ -204,7 +208,7 @@ function TradeHistoryTable({ trades, onDeleteTrade, onPrepareTradeReview }: Trad
                     className={`trade-row ${selectedTradeId === trade.id ? 'selected' : ''}`}
                     onClick={() => {
                       setSelectedTradeId(trade.id)
-                      onPrepareTradeReview?.(trade)
+                      setIsReviewOpen(true)
                     }}
                   >
                     <td>{formatDate(trade.date)}</td>
@@ -255,7 +259,14 @@ function TradeHistoryTable({ trades, onDeleteTrade, onPrepareTradeReview }: Trad
           </tbody>
         </table>
       </div>
-      <p className="table-footnote">Row click is ready for detailed trade review panel integration.</p>
+      <p className="table-footnote">Click any row to open the trade review drawer.</p>
+
+      <TradeDetailDrawer
+        isOpen={isReviewOpen && Boolean(selectedTrade)}
+        trade={selectedTrade}
+        onClose={() => setIsReviewOpen(false)}
+        onSave={onUpdateTrade}
+      />
     </>
   )
 }
