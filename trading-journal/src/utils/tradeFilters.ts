@@ -19,7 +19,11 @@ export const EMOTION_TAGS = ['Confident', 'Hesitant', 'FOMO', 'Frustrated', 'Cal
 
 export const MISTAKE_TAGS = ['Chased entry', 'Moved stop', 'Took profit early', 'No confirmation', 'Overtraded', 'Revenge trade', 'Oversized', 'No Stop']
 
-export const today = () => new Date().toISOString().slice(0, 10)
+const pad2 = (value: number) => String(value).padStart(2, '0')
+
+const toLocalIsoDate = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+
+export const today = () => toLocalIsoDate(new Date())
 
 export const initialForm = (): TradeFormData => ({
   date: today(),
@@ -57,8 +61,15 @@ export const loadTrades = (): Trade[] => {
 
     return parsed.map((item) => {
       const entry = Number(item.entry) || 0
+      const exit = Number(item.exit) || 0
       const shares = Number(item.shares) || 0
-      const pnl = Number(item.pnl) || 0
+      const fees = Number(item.fees) || 0
+      const hasProvidedPnl = Number.isFinite(Number(item.pnl))
+      const fallbackPnl =
+        String(item.side || '').toUpperCase() === 'SHORT'
+          ? (entry - exit) * shares - fees
+          : (exit - entry) * shares - fees
+      const pnl = hasProvidedPnl ? Number(item.pnl) : fallbackPnl
       const pnlHigh = Number.isFinite(Number(item.pnlHigh)) ? Number(item.pnlHigh) : pnl
       const pnlLow = Number.isFinite(Number(item.pnlLow)) ? Number(item.pnlLow) : pnl
       const durationSec = Number.isFinite(Number(item.durationSec)) && Number(item.durationSec) >= 0 ? Number(item.durationSec) : 0
@@ -68,9 +79,9 @@ export const loadTrades = (): Trade[] => {
         entry,
         session: String(item.session || 'Open'),
         marketCondition: String(item.marketCondition || 'Trending'),
-        exit: Number(item.exit) || 0,
+        exit,
         shares,
-        fees: Number(item.fees) || 0,
+        fees,
         pnl,
         pnlHigh,
         pnlLow,
@@ -143,10 +154,29 @@ export const loadSetups = (): string[] => {
   }
 }
 
-const toDateAtMidnight = (isoDate: string) => {
-  const [year, month, day] = isoDate.split('-').map(Number)
-  if (!year || !month || !day) return null
-  return new Date(year, month - 1, day)
+const toDateAtMidnight = (rawDate: string) => {
+  const value = String(rawDate || '').trim()
+  if (!value) return null
+
+  const isoMatch = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (isoMatch) {
+    const year = Number(isoMatch[1])
+    const month = Number(isoMatch[2])
+    const day = Number(isoMatch[3])
+    if (year && month && day) return new Date(year, month - 1, day)
+  }
+
+  const slashMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+  if (slashMatch) {
+    const month = Number(slashMatch[1])
+    const day = Number(slashMatch[2])
+    const year = Number(slashMatch[3])
+    if (year && month && day) return new Date(year, month - 1, day)
+  }
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return null
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate())
 }
 
 const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())

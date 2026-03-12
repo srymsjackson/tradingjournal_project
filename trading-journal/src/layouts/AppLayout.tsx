@@ -27,9 +27,6 @@ function AppLayout({ onLogout }: AppLayoutProps) {
         <NavLink to="/app/review" className={({ isActive }) => `route-nav-item ${isActive ? 'active' : ''}`}>
           Review
         </NavLink>
-        <NavLink to="/app/settings" className={({ isActive }) => `route-nav-item ${isActive ? 'active' : ''}`}>
-          Settings
-        </NavLink>
       </nav>
 
       <Outlet />

@@ -1,23 +1,11 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import type { ChartDataSet, ReviewInsights, TimeFilterPreset, Trade, TradeStats, WeeklyReview } from '../types'
-import { CHART_COLORS, formatDate, formatMoney, tooltipMoneyFormatter } from '../utils/tradeUtils'
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import type { ChartDataSet, TimeFilterPreset, Trade, TradeStats } from '../types'
+import { formatDate, formatMoney, tooltipMoneyFormatter } from '../utils/tradeUtils'
 
 type DashboardPanelProps = {
   stats: TradeStats
   chartData: ChartDataSet
-  insights: ReviewInsights
-  weeklyReview: WeeklyReview
+  accentColor: string
   timeFilterPreset: TimeFilterPreset
   customDateStart: string
   customDateEnd: string
@@ -33,8 +21,7 @@ type DashboardPanelProps = {
 function DashboardPanel({
   stats,
   chartData,
-  insights,
-  weeklyReview,
+  accentColor,
   timeFilterPreset,
   customDateStart,
   customDateEnd,
@@ -54,14 +41,10 @@ function DashboardPanel({
     { label: 'Custom', value: 'CUSTOM' },
   ]
 
-  const bestSetup = weeklyReview.bestSetup?.name || chartData.setupPnl[0]?.setup || 'N/A'
-  const strongestSession = weeklyReview.strongestSession?.name || chartData.sessionPerformance[0]?.session || 'N/A'
-  const biggestMistake = weeklyReview.mostCommonMistake?.tag || chartData.mistakeFrequency[0]?.tag || 'No repeated mistake'
-  const coachingNotes = [...insights.coachingNotes, ...weeklyReview.insightBlocks].filter(Boolean).slice(0, 5)
   const tradesForTable = recentTrades.slice(0, 8)
 
   return (
-    <section className="panel dashboard-panel trader-dashboard">
+    <section className="dashboard-panel trader-dashboard minimalist-dashboard">
       <div className="dashboard-topbar">
         <div>
           <h2>Dashboard</h2>
@@ -126,132 +109,35 @@ function DashboardPanel({
       </div>
 
       <div className="dashboard-main-grid">
-        <article className="chart-card large-chart-card">
+        <section className="minimal-section large-chart-card">
           <h4>Equity Curve</h4>
           {chartData.pnlTrend.length > 0 ? (
             <div className="chart-shell large">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData.pnlTrend}>
+                <AreaChart data={chartData.pnlTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" />
                   <YAxis />
                   <Tooltip formatter={tooltipMoneyFormatter} />
-                  <Line type="monotone" dataKey="cumulativePnl" stroke="#2f8f68" strokeWidth={3} dot={false} name="Cumulative P&L" />
-                </LineChart>
+                  <Area
+                    type="monotone"
+                    dataKey="cumulativePnl"
+                    stroke={accentColor}
+                    fill={accentColor}
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                    name="Cumulative P&L"
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           ) : (
             <p className="empty-copy">Log trades to render the equity curve.</p>
           )}
-        </article>
-
-        <div className="insight-card-grid">
-          <article className="insight-card">
-            <p className="metric-label">Best Setup</p>
-            <h4>{bestSetup}</h4>
-            <small>{weeklyReview.bestSetup ? formatMoney(weeklyReview.bestSetup.netPnl) : 'No setup data yet'}</small>
-          </article>
-          <article className="insight-card">
-            <p className="metric-label">Strongest Session</p>
-            <h4>{strongestSession}</h4>
-            <small>{weeklyReview.strongestSession ? formatMoney(weeklyReview.strongestSession.netPnl) : 'No session data yet'}</small>
-          </article>
-          <article className="insight-card">
-            <p className="metric-label">Biggest Mistake</p>
-            <h4>{biggestMistake}</h4>
-            <small>{weeklyReview.mostCommonMistake ? `${weeklyReview.mostCommonMistake.count} tagged trades` : 'No recurring mistake yet'}</small>
-          </article>
-          <article className="insight-card">
-            <p className="metric-label">Discipline Score</p>
-            <h4>{insights.disciplineScore.toFixed(1)}%</h4>
-            <small>{insights.currentStreak.count} {insights.currentStreak.direction} streak</small>
-          </article>
-        </div>
+        </section>
       </div>
 
-      <div className="dashboard-row-grid">
-        <article className="chart-card">
-          <h4>Performance by Setup</h4>
-          {chartData.setupPnl.length > 0 ? (
-            <div className="chart-shell">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData.setupPnl}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="setup" tick={{ fontSize: 11 }} />
-                  <YAxis />
-                  <Tooltip formatter={tooltipMoneyFormatter} />
-                  <Bar dataKey="netPnl" name="Net P&L">
-                    {chartData.setupPnl.map((entry, index) => (
-                      <Cell key={entry.setup} fill={entry.netPnl >= 0 ? '#2f8f68' : CHART_COLORS[(index + 1) % CHART_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="empty-copy">No setup performance data available.</p>
-          )}
-        </article>
-
-        <article className="chart-card">
-          <h4>Performance by Session</h4>
-          {chartData.sessionPerformance.length > 0 ? (
-            <div className="chart-shell">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData.sessionPerformance}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="session" tick={{ fontSize: 11 }} />
-                  <YAxis />
-                  <Tooltip formatter={tooltipMoneyFormatter} />
-                  <Bar dataKey="netPnl" name="Net P&L">
-                    {chartData.sessionPerformance.map((entry, index) => (
-                      <Cell key={entry.session} fill={entry.netPnl >= 0 ? '#2f8f68' : CHART_COLORS[(index + 2) % CHART_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="empty-copy">No session performance data available.</p>
-          )}
-        </article>
-      </div>
-
-      <div className="dashboard-row-grid">
-        <article className="chart-card">
-          <h4>Mistake Breakdown</h4>
-          {chartData.mistakeFrequency.length > 0 ? (
-            <div className="chart-shell">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData.mistakeFrequency} layout="vertical" margin={{ left: 8, right: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" allowDecimals={false} />
-                  <YAxis type="category" dataKey="tag" width={110} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(value) => `${Number(value)} trades`} />
-                  <Bar dataKey="count" fill="#ba6158" name="Tagged Trades" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="empty-copy">Tag mistakes in trades to unlock this view.</p>
-          )}
-        </article>
-
-        <article className="chart-card notes-card">
-          <h4>Coaching Notes</h4>
-          {coachingNotes.length > 0 ? (
-            <ul className="notes-list">
-              {coachingNotes.map((note) => (
-                <li key={note}>{note}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="empty-copy">No coaching notes yet.</p>
-          )}
-        </article>
-      </div>
-
-      <article className="chart-card recent-trades-card">
+      <section className="minimal-section recent-trades-card">
         <h4>Recent Trades</h4>
         {tradesForTable.length > 0 ? (
           <div className="table-wrap recent-table-wrap">
@@ -283,7 +169,7 @@ function DashboardPanel({
         ) : (
           <p className="empty-copy">No recent trades yet.</p>
         )}
-      </article>
+      </section>
     </section>
   )
 }

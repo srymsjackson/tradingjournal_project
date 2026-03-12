@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import TradeEntryPanel from '../components/TradeEntryPanel'
 import DashboardPanel from '../components/DashboardPanel'
 import TradeHistoryTable from '../components/TradeHistoryTable'
@@ -12,9 +12,7 @@ import {
   createFormFromTrade,
   filterTrades,
   getChartData,
-  getReviewInsights,
   getStats,
-  getWeeklyReview,
   initialForm,
   loadSetups,
   loadSymbols,
@@ -23,6 +21,7 @@ import {
   normalizeSymbols,
 } from '../utils/tradeUtils'
 import { validateTradeForm } from '../utils/tradeValidation'
+import { parseNormalizedTradeCsvFile } from '../utils/parseNormalizedTradeCsv'
 
 type AppSection = 'dashboard' | 'log-trade' | 'trade-history'
 type DashboardTool = 'playbook' | 'settings' | null
@@ -39,6 +38,20 @@ const NAV_ITEMS: Array<{ id: AppSection; label: string; description: string }> =
   { id: 'trade-history', label: 'Trade History', description: 'Inspect and edit journal' },
 ]
 
+const ACCENT_COLOR_STORAGE_KEY = 'ur-journ-accent-color'
+const DEFAULT_ACCENT_COLOR = '#22ab6f'
+
+const isHexColor = (value: string) => /^#[0-9a-f]{6}$/i.test(value)
+
+const darkenHex = (hex: string, percent: number) => {
+  const cleanHex = hex.replace('#', '')
+  const factor = Math.max(0, Math.min(1, 1 - percent / 100))
+  const r = Math.round(parseInt(cleanHex.slice(0, 2), 16) * factor)
+  const g = Math.round(parseInt(cleanHex.slice(2, 4), 16) * factor)
+  const b = Math.round(parseInt(cleanHex.slice(4, 6), 16) * factor)
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}
+
 function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, showStandaloneHeader = true }: JournalWorkspaceProps) {
   const [trades, setTrades] = useState<Trade[]>(() => loadTrades())
   const [savedSymbols, setSavedSymbols] = useState<string[]>(() => loadSymbols())
@@ -53,6 +66,21 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
   const [customDateEnd, setCustomDateEnd] = useState<string>('')
   const [activeSection, setActiveSection] = useState<AppSection>(initialSection)
   const [activeTool, setActiveTool] = useState<DashboardTool>(initialTool)
+  const [importStatus, setImportStatus] = useState<string>('')
+  const [importStatusTone, setImportStatusTone] = useState<'success' | 'error'>('success')
+  const csvInputRef = useRef<HTMLInputElement | null>(null)
+  const [accentColor, setAccentColor] = useState<string>(() => {
+    const stored = localStorage.getItem(ACCENT_COLOR_STORAGE_KEY)
+    return stored && isHexColor(stored) ? stored : DEFAULT_ACCENT_COLOR
+  })
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.style.setProperty('--accent', accentColor)
+    root.style.setProperty('--positive', accentColor)
+    root.style.setProperty('--accent-strong', darkenHex(accentColor, 10))
+    localStorage.setItem(ACCENT_COLOR_STORAGE_KEY, accentColor)
+  }, [accentColor])
 
   const { persistTrades, persistSymbols, persistSetups, clearPersistedData } = useJournalPersistence({
     setTrades,
@@ -85,8 +113,6 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
 
   const stats = useMemo(() => getStats(filteredTrades), [filteredTrades])
   const chartData = useMemo(() => getChartData(filteredTrades), [filteredTrades])
-  const insights = useMemo(() => getReviewInsights(filteredTrades), [filteredTrades])
-  const weeklyReview = useMemo(() => getWeeklyReview(filteredTrades), [filteredTrades])
 
   const updateForm = <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => {
     if (formError) setFormError('')
@@ -199,6 +225,46 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
     clearFilters()
   }
 
+  const closeToolModal = () => setActiveTool(null)
+
+  const handleOpenCsvPicker = () => {
+    setImportStatus('')
+    setImportStatusTone('success')
+    csvInputRef.current?.click()
+  }
+
+  const handleImportNormalizedCsv = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      const { trades: importedTrades, skippedRows } = await parseNormalizedTradeCsvFile(file)
+
+      if (importedTrades.length === 0) {
+        setImportStatusTone('error')
+        setImportStatus('no valid rows imported. check required columns and values.')
+        event.target.value = ''
+        return
+      }
+
+      persistTrades([...importedTrades, ...trades])
+      persistSymbols([...savedSymbols, ...importedTrades.map((trade) => trade.symbol)])
+      persistSetups([...savedSetups, ...importedTrades.map((trade) => trade.setup)])
+
+      setImportStatus(
+        skippedRows > 0
+          ? `${importedTrades.length} trades imported. ${skippedRows} rows skipped.`
+          : `${importedTrades.length} trades imported successfully.`,
+      )
+      setImportStatusTone('success')
+    } catch {
+      setImportStatusTone('error')
+      setImportStatus('import failed. csv must include: date,symbol,side,entry,exit,shares,pnl,setup,session')
+    }
+
+    event.target.value = ''
+  }
+
   return (
     <>
       {showStandaloneHeader && <div className="bg-layer" />}
@@ -249,12 +315,11 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
         <section className="content-shell">
           {activeSection === 'dashboard' && (
             <>
-              <section className="panel dashboard-shell">
+              <section className="dashboard-shell">
                 <DashboardPanel
                   stats={stats}
                   chartData={chartData}
-                  insights={insights}
-                  weeklyReview={weeklyReview}
+                  accentColor={accentColor}
                   timeFilterPreset={timeFilterPreset}
                   customDateStart={customDateStart}
                   customDateEnd={customDateEnd}
@@ -267,49 +332,6 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
                   recentTrades={filteredTrades}
                 />
               </section>
-
-              {activeTool === 'playbook' && (
-                <section className="panel review-shell">
-                  <div className="panel-head">
-                    <h2>Playbook</h2>
-                    <p>Reference your repeatable setup framework.</p>
-                  </div>
-                  <div className="weekly-review-grid">
-                    {SETUP_PLAYBOOK.map((setup) => (
-                      <article key={setup.id} className="weekly-review-card">
-                        <small>{setup.name}</small>
-                        <h5>{setup.description}</h5>
-                        <p>Entry: {setup.entryCriteria}</p>
-                        <p>Invalidation: {setup.invalidationCriteria}</p>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {activeTool === 'settings' && (
-                <section className="panel review-shell">
-                  <div className="panel-head">
-                    <h2>Settings</h2>
-                    <p>Workspace controls and data management.</p>
-                  </div>
-                  <div className="settings-grid">
-                    <article className="weekly-review-card">
-                      <small>Trade Data</small>
-                      <h5>{trades.length} stored trades</h5>
-                      <p>Export, reset, and manage your local journal data.</p>
-                    </article>
-                  </div>
-                  <div className="actions">
-                    <button type="button" className="btn ghost" onClick={exportJson}>
-                      Export JSON
-                    </button>
-                    <button type="button" className="btn ghost" onClick={clearAllData}>
-                      Clear All Data
-                    </button>
-                  </div>
-                </section>
-              )}
             </>
           )}
 
@@ -335,6 +357,77 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
           )}
         </section>
       </main>
+
+      {activeTool && (
+        <div className="tool-modal-backdrop" onClick={closeToolModal}>
+          <section className="tool-modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <header className="tool-modal-head">
+              <div>
+                <h2>{activeTool === 'playbook' ? 'Playbook' : 'Settings'}</h2>
+                <p>{activeTool === 'playbook' ? 'Reference your repeatable setup framework.' : 'Workspace controls and data management.'}</p>
+              </div>
+              <button type="button" className="tool-modal-close" onClick={closeToolModal} aria-label="Close modal">
+                x
+              </button>
+            </header>
+
+            {activeTool === 'playbook' && (
+              <div className="weekly-review-grid">
+                {SETUP_PLAYBOOK.map((setup) => (
+                  <article key={setup.id} className="weekly-review-card">
+                    <small>{setup.name}</small>
+                    <h5>{setup.description}</h5>
+                    <p>Entry: {setup.entryCriteria}</p>
+                    <p>Invalidation: {setup.invalidationCriteria}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+
+            {activeTool === 'settings' && (
+              <>
+                <div className="settings-grid">
+                  <article className="weekly-review-card">
+                    <small>Trade Data</small>
+                    <h5>{trades.length} stored trades</h5>
+                    <p>Export, reset, and manage your local journal data.</p>
+                  </article>
+                  <article className="weekly-review-card">
+                    <small>Theme Accent</small>
+                    <h5>Accent Color</h5>
+                    <p>Updates all green-highlighted UI elements.</p>
+                    <div className="accent-picker-row">
+                      <input
+                        type="color"
+                        value={accentColor}
+                        onChange={(event) => setAccentColor(event.target.value)}
+                        aria-label="Accent color picker"
+                      />
+                      <span>{accentColor}</span>
+                      <button type="button" className="btn ghost" onClick={() => setAccentColor(DEFAULT_ACCENT_COLOR)}>
+                        reset
+                      </button>
+                    </div>
+                  </article>
+                </div>
+                <div className="actions">
+                  <button type="button" className="btn ghost" onClick={exportJson}>
+                    Export JSON
+                  </button>
+                  <button type="button" className="btn ghost" onClick={handleOpenCsvPicker}>
+                    import csv
+                  </button>
+                  <button type="button" className="btn ghost" onClick={clearAllData}>
+                    Clear All Data
+                  </button>
+                </div>
+                <input ref={csvInputRef} type="file" accept=".csv,text/csv" className="hidden-file-input" onChange={handleImportNormalizedCsv} />
+                {importStatus && <p className={`import-feedback ${importStatusTone}`}>{importStatus}</p>}
+              </>
+            )}
+          </section>
+        </div>
+      )}
     </>
   )
 }
