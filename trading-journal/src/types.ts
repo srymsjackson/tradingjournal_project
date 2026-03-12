@@ -4,6 +4,24 @@ export type DashboardTab = 'overview' | 'distribution' | 'trend' | 'symbols'
 
 export type TimeFilterPreset = 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'ALL_TIME' | 'CUSTOM'
 
+export type SetupPlaybookEntry = {
+  id: string
+  name: string
+  description: string
+  entryCriteria: string
+  invalidationCriteria: string
+  notes: string
+}
+
+export type TradeAttachment = {
+  id: string
+  kind: 'screenshot' | 'chart'
+  name: string
+  status: 'placeholder' | 'uploaded'
+  url: string | null
+  createdAt: number
+}
+
 export type SampleTradeInput = {
   date: string
   symbol: string
@@ -44,6 +62,7 @@ export type Trade = {
   brokeRules: boolean
   emotionTags: string[]
   mistakeTags: string[]
+  attachments: TradeAttachment[]
   pnl: number
   returnPct: number
   createdAt: number
@@ -102,6 +121,20 @@ export type ReviewInsights = {
   currentStreak: { direction: 'win' | 'loss' | 'flat'; count: number }
   setupPerformance: Array<{ setup: string; trades: number; netPnl: number; winRate: number }>
   coachingNotes: string[]
+}
+
+export type WeeklyReview = {
+  tradeCount: number
+  bestSetup: { name: string; netPnl: number } | null
+  worstSetup: { name: string; netPnl: number } | null
+  avgWinner: number
+  avgLoser: number
+  mostCommonMistake: { tag: string; count: number } | null
+  strongestSession: { name: string; netPnl: number } | null
+  weakestSession: { name: string; netPnl: number } | null
+  ruleFollowed: { trades: number; netPnl: number; winRate: number }
+  ruleBroken: { trades: number; netPnl: number; winRate: number }
+  insightBlocks: string[]
 }
 
 export type ChartDataSet = {

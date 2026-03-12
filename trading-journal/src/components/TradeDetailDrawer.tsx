@@ -250,8 +250,28 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
           </section>
 
           <section className="review-block coming-soon-block">
-            <h4>Attachments</h4>
-            <p>Screenshot and chart uploads are coming soon. This panel is ready for future review media integration.</p>
+            <div className="attachment-head">
+              <h4>Chart Screenshots</h4>
+              <button type="button" className="btn ghost" disabled>
+                Upload Screenshot (Soon)
+              </button>
+            </div>
+            {normalizedTrade.attachments.length > 0 ? (
+              <div className="attachment-grid">
+                {normalizedTrade.attachments.map((attachment) => (
+                  <article key={attachment.id} className="attachment-card">
+                    <div className="attachment-thumb" />
+                    <p>{attachment.name}</p>
+                    <small>{attachment.kind} · {attachment.status}</small>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="attachment-empty">
+                <p>No screenshots attached yet.</p>
+                <small>Future-ready area for chart screenshots, annotations, and before/after trade context.</small>
+              </div>
+            )}
           </section>
         </div>
 

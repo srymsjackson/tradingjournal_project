@@ -1,16 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap');
-
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: 'Source Sans 3', sans-serif;
+  font-family: Consolas, 'Cascadia Mono', 'Cascadia Code', 'Lucida Console', 'Courier New', monospace;
   min-width: 320px;
   min-height: 100vh;
-  color: #17201b;
-  background: radial-gradient(circle at 5% 5%, #ffffff 0, transparent 42%), linear-gradient(150deg, #dcebe0, #eef3ef);
+  color: #e6eeea;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(44, 156, 113, 0.12) 0, transparent 36%),
+    radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.06) 0, transparent 22%),
+    linear-gradient(160deg, #0d1317, #121a1f 55%, #0f1518);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -19,5 +20,5 @@ h1,
 h2,
 h3,
 th {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: Consolas, 'Cascadia Mono', 'Cascadia Code', 'Lucida Console', 'Courier New', monospace;
 }

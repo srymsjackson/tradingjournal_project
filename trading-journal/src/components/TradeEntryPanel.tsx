@@ -1,5 +1,6 @@
 import type { TradeFormData } from '../types'
-import { COMMON_SETUPS, EMOTION_TAGS, MARKET_CONDITIONS, MISTAKE_TAGS, SESSION_OPTIONS } from '../utils/tradeUtils'
+import { COMMON_SETUPS, EMOTION_TAGS, MARKET_CONDITIONS, MISTAKE_TAGS, SESSION_OPTIONS, findPlaybookSetup } from '../utils/tradeUtils'
+import { SETUP_PLAYBOOK } from '../data/setupPlaybook'
 
 type TradeEntryPanelProps = {
   form: TradeFormData
@@ -26,6 +27,8 @@ function TradeEntryPanel({
   canDuplicate,
   onLoadSample,
 }: TradeEntryPanelProps) {
+  const selectedPlaybook = findPlaybookSetup(form.setup)
+
   const toggleTag = (field: 'emotionTags' | 'mistakeTags', tag: string) => {
     const currentTags = form[field]
     const nextTags = currentTags.includes(tag) ? currentTags.filter((item) => item !== tag) : [...currentTags, tag]
@@ -168,6 +171,17 @@ function TradeEntryPanel({
         )}
 
         <div className="quick-row">
+          <p className="quick-label">Playbook setups</p>
+          <div className="quick-chips">
+            {SETUP_PLAYBOOK.map((setup) => (
+              <button key={setup.id} type="button" className="chip-btn" onClick={() => onUpdateForm('setup', setup.name)}>
+                {setup.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="quick-row">
           <p className="quick-label">Common setups</p>
           <div className="quick-chips">
             {COMMON_SETUPS.map((setup) => (
@@ -177,6 +191,24 @@ function TradeEntryPanel({
             ))}
           </div>
         </div>
+
+        {selectedPlaybook && (
+          <article className="playbook-context-card">
+            <h4>{selectedPlaybook.name} Playbook</h4>
+            <p>{selectedPlaybook.description}</p>
+            <div className="playbook-context-grid">
+              <div>
+                <small>Entry Criteria</small>
+                <p>{selectedPlaybook.entryCriteria}</p>
+              </div>
+              <div>
+                <small>Invalidation</small>
+                <p>{selectedPlaybook.invalidationCriteria}</p>
+              </div>
+            </div>
+            <small className="playbook-note">{selectedPlaybook.notes}</small>
+          </article>
+        )}
 
         <div className="form-section">
           <div className="section-head">

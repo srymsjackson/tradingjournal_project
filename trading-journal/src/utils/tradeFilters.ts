@@ -1,0 +1,214 @@
+import type { SetupPlaybookEntry, TimeFilterPreset, Trade, TradeFormData } from '../types'
+import { SETUP_PLAYBOOK } from '../data/setupPlaybook'
+
+export const STORAGE_KEY = 'pulse-journal-trades'
+export const SYMBOLS_KEY = 'pulse-journal-symbols'
+export const SETUPS_KEY = 'pulse-journal-setups'
+
+export const COMMON_SETUPS = Array.from(new Set([...SETUP_PLAYBOOK.map((item) => item.name), 'VWAP Reject', 'Trend Pullback', 'Opening Range', 'Asia Breakout', 'Range Reject']))
+
+const normalizedSetupMap = Object.fromEntries(SETUP_PLAYBOOK.map((item) => [item.name.trim().toLowerCase(), item]))
+
+export const findPlaybookSetup = (setupName: string): SetupPlaybookEntry | null => normalizedSetupMap[setupName.trim().toLowerCase()] ?? null
+
+export const SESSION_OPTIONS = ['Premarket', 'Open', 'Midday', 'Power Hour', 'Asia', 'London', 'New York AM', 'New York PM']
+
+export const MARKET_CONDITIONS = ['Trending', 'Range-bound', 'Choppy', 'High Volatility', 'Low Liquidity']
+
+export const EMOTION_TAGS = ['Confident', 'Hesitant', 'FOMO', 'Frustrated', 'Calm', 'Focused', 'Patient', 'Anxious', 'Revenge']
+
+export const MISTAKE_TAGS = ['Chased entry', 'Moved stop', 'Took profit early', 'No confirmation', 'Overtraded', 'Revenge trade', 'Oversized', 'No Stop']
+
+export const today = () => new Date().toISOString().slice(0, 10)
+
+export const initialForm = (): TradeFormData => ({
+  date: today(),
+  symbol: '',
+  side: 'LONG',
+  setup: '',
+  session: 'Open',
+  marketCondition: 'Trending',
+  entry: 0,
+  exit: 0,
+  shares: 0,
+  fees: 0,
+  pnlHigh: 0,
+  pnlLow: 0,
+  durationMin: 0,
+  durationSec: 0,
+  confidence: 3,
+  notes: '',
+  ruleFollowed: true,
+  setupWasValid: true,
+  waitedForConfirmation: true,
+  riskWasDefined: true,
+  followedPlan: true,
+  brokeRules: false,
+  emotionTags: [],
+  mistakeTags: [],
+})
+
+export const loadTrades = (): Trade[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.map((item) => {
+      const entry = Number(item.entry) || 0
+      const shares = Number(item.shares) || 0
+      const pnl = Number(item.pnl) || 0
+      const pnlHigh = Number.isFinite(Number(item.pnlHigh)) ? Number(item.pnlHigh) : pnl
+      const pnlLow = Number.isFinite(Number(item.pnlLow)) ? Number(item.pnlLow) : pnl
+      const durationSec = Number.isFinite(Number(item.durationSec)) && Number(item.durationSec) >= 0 ? Number(item.durationSec) : 0
+
+      return {
+        ...item,
+        entry,
+        session: String(item.session || 'Open'),
+        marketCondition: String(item.marketCondition || 'Trending'),
+        exit: Number(item.exit) || 0,
+        shares,
+        fees: Number(item.fees) || 0,
+        pnl,
+        pnlHigh,
+        pnlLow,
+        durationSec,
+        returnPct: Number.isFinite(Number(item.returnPct))
+          ? Number(item.returnPct)
+          : entry * shares > 0
+            ? (pnl / (entry * shares)) * 100
+            : 0,
+        ruleFollowed: item.ruleFollowed !== false,
+        setupWasValid: item.setupWasValid !== false,
+        waitedForConfirmation: item.waitedForConfirmation !== false,
+        riskWasDefined: item.riskWasDefined !== false,
+        followedPlan: item.followedPlan !== false,
+        brokeRules: item.brokeRules === true,
+        emotionTags: Array.isArray(item.emotionTags) ? item.emotionTags.map((tag: unknown) => String(tag)).filter(Boolean) : [],
+        mistakeTags: Array.isArray(item.mistakeTags) ? item.mistakeTags.map((tag: unknown) => String(tag)).filter(Boolean) : [],
+        attachments: Array.isArray(item.attachments)
+          ? item.attachments
+              .map((attachment: unknown) => {
+                const rawAttachment = attachment as Record<string, unknown>
+                return {
+                  id: String(rawAttachment.id || crypto.randomUUID()),
+                  kind: rawAttachment.kind === 'chart' ? 'chart' : 'screenshot',
+                  name: String(rawAttachment.name || 'Attachment'),
+                  status: rawAttachment.status === 'uploaded' ? 'uploaded' : 'placeholder',
+                  url: typeof rawAttachment.url === 'string' ? rawAttachment.url : null,
+                  createdAt: Number(rawAttachment.createdAt) || Date.now(),
+                }
+              })
+              .filter((attachmentItem: { name: string }) => attachmentItem.name.trim().length > 0)
+          : [],
+        createdAt: Number(item.createdAt) || Date.now(),
+      } as Trade
+    })
+  } catch {
+    return []
+  }
+}
+
+export const loadSymbols = (): string[] => {
+  try {
+    const raw = localStorage.getItem(SYMBOLS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return Array.from(new Set(parsed.map((item) => String(item).trim().toUpperCase()).filter(Boolean))).sort()
+  } catch {
+    return []
+  }
+}
+
+export const normalizeSymbols = (symbols: string[]) =>
+  Array.from(new Set(symbols.map((item) => item.trim().toUpperCase()).filter(Boolean))).sort()
+
+export const normalizeSetups = (setups: string[]) =>
+  Array.from(new Set(setups.map((item) => item.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b))
+
+export const loadSetups = (): string[] => {
+  try {
+    const raw = localStorage.getItem(SETUPS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return normalizeSetups(parsed.map((item) => String(item)))
+  } catch {
+    return []
+  }
+}
+
+const toDateAtMidnight = (isoDate: string) => {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
+}
+
+const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+const startOfWeek = (date: Date) => {
+  const base = startOfDay(date)
+  const day = base.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  const weekStart = new Date(base)
+  weekStart.setDate(base.getDate() + diff)
+  return weekStart
+}
+
+export const isTradeInRange = (tradeDate: string, preset: TimeFilterPreset, customStart: string, customEnd: string) => {
+  if (preset === 'ALL_TIME') return true
+
+  const tradeDay = toDateAtMidnight(tradeDate)
+  if (!tradeDay) return false
+
+  const todayDate = startOfDay(new Date())
+
+  if (preset === 'TODAY') {
+    return tradeDay.getTime() === todayDate.getTime()
+  }
+
+  if (preset === 'THIS_WEEK') {
+    return tradeDay >= startOfWeek(todayDate) && tradeDay <= todayDate
+  }
+
+  if (preset === 'THIS_MONTH') {
+    return tradeDay.getFullYear() === todayDate.getFullYear() && tradeDay.getMonth() === todayDate.getMonth()
+  }
+
+  const start = customStart ? toDateAtMidnight(customStart) : null
+  const end = customEnd ? toDateAtMidnight(customEnd) : null
+
+  if (!start && !end) return true
+  if (start && !end) return tradeDay >= start
+  if (!start && end) return tradeDay <= end
+
+  if (!start || !end) return true
+  const minBound = start <= end ? start : end
+  const maxBound = start <= end ? end : start
+  return tradeDay >= minBound && tradeDay <= maxBound
+}
+
+export type TradeFilterOptions = {
+  timeFilterPreset: TimeFilterPreset
+  customDateStart: string
+  customDateEnd: string
+  filterSymbol: string
+  filterSetup: string
+  filterOutcome: 'ALL' | 'WIN' | 'LOSS'
+}
+
+export const filterTrades = (trades: Trade[], options: TradeFilterOptions) =>
+  trades
+    .filter((trade) => isTradeInRange(trade.date, options.timeFilterPreset, options.customDateStart, options.customDateEnd))
+    .filter((trade) => (options.filterSymbol === 'ALL' ? true : trade.symbol === options.filterSymbol))
+    .filter((trade) => (options.filterSetup === 'ALL' ? true : trade.setup === options.filterSetup))
+    .filter((trade) => {
+      if (options.filterOutcome === 'ALL') return true
+      if (options.filterOutcome === 'WIN') return trade.pnl > 0
+      return trade.pnl < 0
+    })

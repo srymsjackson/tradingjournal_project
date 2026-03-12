@@ -1,4 +1,4 @@
-# Pulse Journal
+# ur journ.
 
 A day-trading journal built with React, TypeScript, and Vite.
 
