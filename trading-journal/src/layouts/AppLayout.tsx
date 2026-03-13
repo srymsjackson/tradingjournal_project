@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
 type AppLayoutProps = {
-  onLogout: () => void
+  onLogout: () => Promise<void> | void
 }
 
 function AppLayout({ onLogout }: AppLayoutProps) {

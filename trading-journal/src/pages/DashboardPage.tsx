@@ -1,7 +1,11 @@
 import JournalWorkspace from './JournalWorkspace'
 
-function DashboardPage() {
-  return <JournalWorkspace initialSection="dashboard" showStandaloneHeader={false} />
+type DashboardPageProps = {
+  userId: string
+}
+
+function DashboardPage({ userId }: DashboardPageProps) {
+  return <JournalWorkspace userId={userId} initialSection="dashboard" showStandaloneHeader={false} />
 }
 
 export default DashboardPage

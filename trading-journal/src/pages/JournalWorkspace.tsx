@@ -10,8 +10,8 @@ import {
   buildSeedTradesFromSample,
   buildTradeFromForm,
   createFormFromTrade,
+  buildEquityCurveData,
   filterTrades,
-  getChartData,
   getStats,
   initialForm,
   loadSetups,
@@ -22,11 +22,14 @@ import {
 } from '../utils/tradeUtils'
 import { validateTradeForm } from '../utils/tradeValidation'
 import { parseNormalizedTradeCsvFile } from '../utils/parseNormalizedTradeCsv'
+import { loadUserTradesFromCloud, saveUserTradesToCloud } from '../lib/trades'
+import { STORAGE_KEY } from '../utils/tradeFilters'
 
 type AppSection = 'dashboard' | 'log-trade' | 'trade-history'
 type DashboardTool = 'playbook' | 'settings' | null
 
 type JournalWorkspaceProps = {
+  userId?: string
   initialSection?: AppSection
   initialTool?: DashboardTool
   showStandaloneHeader?: boolean
@@ -52,7 +55,7 @@ const darkenHex = (hex: string, percent: number) => {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
-function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, showStandaloneHeader = true }: JournalWorkspaceProps) {
+function JournalWorkspace({ userId, initialSection = 'dashboard', initialTool = null, showStandaloneHeader = true }: JournalWorkspaceProps) {
   const [trades, setTrades] = useState<Trade[]>(() => loadTrades())
   const [savedSymbols, setSavedSymbols] = useState<string[]>(() => loadSymbols())
   const [savedSetups, setSavedSetups] = useState<string[]>(() => loadSetups())
@@ -86,7 +89,40 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
     setTrades,
     setSavedSymbols,
     setSavedSetups,
+    userId,
   })
+
+  useEffect(() => {
+    if (!userId) return
+
+    let isCancelled = false
+
+    void loadUserTradesFromCloud(userId)
+      .then((cloudTrades) => {
+        if (isCancelled) return
+        if (cloudTrades.length === 0) {
+          const localTrades = loadTrades()
+          if (localTrades.length > 0) {
+            void saveUserTradesToCloud(userId, localTrades).catch((error) => {
+              console.warn('failed to seed cloud trades from local cache', error)
+            })
+          }
+          return
+        }
+
+        setTrades(cloudTrades)
+        setSavedSymbols(normalizeSymbols(cloudTrades.map((trade) => trade.symbol)))
+        setSavedSetups(normalizeSetups(cloudTrades.map((trade) => trade.setup)))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudTrades))
+      })
+      .catch((error) => {
+        console.warn('failed to load cloud trades, using local fallback', error)
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [userId])
 
   const symbolOptions = useMemo(
     () => normalizeSymbols([...savedSymbols, ...trades.map((trade) => trade.symbol)]),
@@ -112,7 +148,7 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
   )
 
   const stats = useMemo(() => getStats(filteredTrades), [filteredTrades])
-  const chartData = useMemo(() => getChartData(filteredTrades), [filteredTrades])
+  const equityCurveData = useMemo(() => buildEquityCurveData(filteredTrades), [filteredTrades])
 
   const updateForm = <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => {
     if (formError) setFormError('')
@@ -218,7 +254,7 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
     if (!shouldClear) return
 
     clearPersistedData()
-    setTrades([])
+    persistTrades([])
     setSavedSymbols([])
     setSavedSetups([])
     setForm(initialForm())
@@ -318,7 +354,7 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
               <section className="dashboard-shell">
                 <DashboardPanel
                   stats={stats}
-                  chartData={chartData}
+                  equityCurveData={equityCurveData}
                   accentColor={accentColor}
                   timeFilterPreset={timeFilterPreset}
                   customDateStart={customDateStart}

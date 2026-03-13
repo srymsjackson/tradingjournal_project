@@ -1,7 +1,11 @@
 import JournalWorkspace from './JournalWorkspace'
 
-function JournalPage() {
-  return <JournalWorkspace initialSection="log-trade" showStandaloneHeader={false} />
+type JournalPageProps = {
+  userId: string
+}
+
+function JournalPage({ userId }: JournalPageProps) {
+  return <JournalWorkspace userId={userId} initialSection="log-trade" showStandaloneHeader={false} />
 }
 
 export default JournalPage

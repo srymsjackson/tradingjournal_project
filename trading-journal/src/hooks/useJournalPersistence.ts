@@ -1,20 +1,28 @@
 import { useCallback } from 'react'
 import type { Trade } from '../types'
 import { normalizeSetups, normalizeSymbols, SETUPS_KEY, STORAGE_KEY, SYMBOLS_KEY } from '../utils/tradeUtils'
+import { saveUserTradesToCloud } from '../lib/trades'
 
 type UseJournalPersistenceArgs = {
   setTrades: React.Dispatch<React.SetStateAction<Trade[]>>
   setSavedSymbols: React.Dispatch<React.SetStateAction<string[]>>
   setSavedSetups: React.Dispatch<React.SetStateAction<string[]>>
+  userId?: string
 }
 
-export const useJournalPersistence = ({ setTrades, setSavedSymbols, setSavedSetups }: UseJournalPersistenceArgs) => {
+export const useJournalPersistence = ({ setTrades, setSavedSymbols, setSavedSetups, userId }: UseJournalPersistenceArgs) => {
   const persistTrades = useCallback(
     (nextTrades: Trade[]) => {
       setTrades(nextTrades)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTrades))
+
+      if (userId) {
+        void saveUserTradesToCloud(userId, nextTrades).catch((error) => {
+          console.warn('cloud sync failed, local copy retained', error)
+        })
+      }
     },
-    [setTrades],
+    [setTrades, userId],
   )
 
   const persistSymbols = useCallback(

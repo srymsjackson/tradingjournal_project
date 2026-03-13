@@ -2266,7 +2266,58 @@ td {
 }
 
 .large-chart-card .chart-shell.large {
-  height: 330px;
+  height: 382px;
+}
+
+.equity-empty-state {
+  min-height: 220px;
+  border: 1px dashed rgba(120, 123, 134, 0.32);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 1.2rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.equity-empty-state h5 {
+  margin: 0;
+  font-size: 1rem;
+  color: #b7becc;
+}
+
+.equity-empty-state p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.equity-tooltip {
+  background: rgba(14, 20, 30, 0.95);
+  border: 1px solid rgba(120, 123, 134, 0.34);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  min-width: 138px;
+}
+
+.equity-tooltip p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.equity-tooltip-date {
+  color: #9aa3b5;
+  margin-bottom: 0.2rem;
+}
+
+.equity-tooltip-value {
+  color: #dce3ef;
+}
+
+.equity-tooltip-drawdown {
+  color: #db7d70;
+  margin-top: 0.16rem;
 }
 
 .minimal-section {

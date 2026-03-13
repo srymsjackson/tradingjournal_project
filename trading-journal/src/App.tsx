@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './layouts/AppLayout'
+import { ProtectedRoute, PublicOnlyRoute } from './components/AuthRouteGuards'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
@@ -8,55 +10,103 @@ import DashboardPage from './pages/DashboardPage'
 import JournalPage from './pages/JournalPage'
 import ReviewPage from './pages/ReviewPage'
 import SettingsPage from './pages/SettingsPage'
+import { getCurrentSession, onAuthStateChange, signOutUser, signInWithEmailPassword, signUpWithEmailPassword } from './auth/session'
 import './App.css'
 
-const AUTH_STORAGE_KEY = 'pulse-journal-authenticated'
-
-const hasStoredSession = () => localStorage.getItem(AUTH_STORAGE_KEY) === '1'
-
-const storeSession = (isAuthenticated: boolean) => {
-  localStorage.setItem(AUTH_STORAGE_KEY, isAuthenticated ? '1' : '0')
-}
-
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => hasStoredSession())
+  const [session, setSession] = useState<Session | null>(null)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
 
-  const handleLogin = () => {
-    storeSession(true)
-    setIsAuthenticated(true)
+  useEffect(() => {
+    let isMounted = true
+
+    void getCurrentSession()
+      .then((currentSession) => {
+        if (!isMounted) return
+        setSession(currentSession)
+      })
+      .finally(() => {
+        if (!isMounted) return
+        setIsAuthLoading(false)
+      })
+
+    const unsubscribe = onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setIsAuthLoading(false)
+    })
+
+    return () => {
+      isMounted = false
+      unsubscribe()
+    }
+  }, [])
+
+  const isAuthenticated = Boolean(session?.user)
+
+  const handleLogin = async (email: string, password: string) => {
+    await signInWithEmailPassword(email, password)
   }
 
-  const handleSignup = () => {
-    storeSession(true)
-    setIsAuthenticated(true)
+  const handleSignup = async (email: string, password: string) => {
+    const data = await signUpWithEmailPassword(email, password)
+    return Boolean(data.session)
   }
 
-  const handleLogout = () => {
-    storeSession(false)
-    setIsAuthenticated(false)
+  const handleLogout = async () => {
+    await signOutUser()
+  }
+
+  if (isAuthLoading) {
+    return (
+      <main className="public-shell">
+        <section className="public-card auth-card">
+          <h2>loading session</h2>
+          <p>checking authentication state...</p>
+        </section>
+      </main>
+    )
   }
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={isAuthenticated ? <Navigate to="/app/dashboard" replace /> : <HomePage />} />
+        <Route
+          path="/"
+          element={
+            <PublicOnlyRoute isAuthenticated={isAuthenticated}>
+              <HomePage />
+            </PublicOnlyRoute>
+          }
+        />
         <Route
           path="/login"
-          element={isAuthenticated ? <Navigate to="/app/dashboard" replace /> : <LoginPage onLogin={handleLogin} />}
+          element={
+            <PublicOnlyRoute isAuthenticated={isAuthenticated}>
+              <LoginPage onLogin={handleLogin} />
+            </PublicOnlyRoute>
+          }
         />
         <Route
           path="/signup"
-          element={isAuthenticated ? <Navigate to="/app/dashboard" replace /> : <SignupPage onSignup={handleSignup} />}
+          element={
+            <PublicOnlyRoute isAuthenticated={isAuthenticated}>
+              <SignupPage onSignup={handleSignup} />
+            </PublicOnlyRoute>
+          }
         />
 
         <Route
           path="/app"
-          element={isAuthenticated ? <AppLayout onLogout={handleLogout} /> : <Navigate to="/login" replace />}
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <AppLayout onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="journal" element={<JournalPage />} />
-          <Route path="review" element={<ReviewPage />} />
+          <Route path="dashboard" element={<DashboardPage userId={session?.user.id ?? ''} />} />
+          <Route path="journal" element={<JournalPage userId={session?.user.id ?? ''} />} />
+          <Route path="review" element={<ReviewPage userId={session?.user.id ?? ''} />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 

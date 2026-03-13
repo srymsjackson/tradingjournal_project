@@ -1,7 +1,11 @@
 import JournalWorkspace from './JournalWorkspace'
 
-function ReviewPage() {
-  return <JournalWorkspace initialSection="trade-history" showStandaloneHeader={false} />
+type ReviewPageProps = {
+  userId: string
+}
+
+function ReviewPage({ userId }: ReviewPageProps) {
+  return <JournalWorkspace userId={userId} initialSection="trade-history" showStandaloneHeader={false} />
 }
 
 export default ReviewPage

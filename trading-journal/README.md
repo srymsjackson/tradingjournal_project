@@ -24,6 +24,19 @@ npm install
 npm run dev
 ```
 
+### Supabase Environment
+
+Create a `.env` file from `.env.example` and fill in your project values:
+
+```bash
+cp .env.example .env
+```
+
+Required variables:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
 Vite will print a local URL, typically http://localhost:5173.
 
 ## Build
@@ -34,9 +47,21 @@ npm run build
 
 ## Data Storage
 
-Trade records are stored in localStorage under this key:
+Trade records are synced to Supabase when configured and still cached locally as a fallback.
+
+Local fallback key:
 
 - pulse-journal-trades
+
+### Supabase Schema
+
+Run the SQL in [supabase/schema.sql](supabase/schema.sql) in the Supabase SQL editor.
+
+This creates:
+
+- `profiles` table linked to `auth.users`
+- `trades` table linked to authenticated users
+- row-level security policies so each user only reads/writes their own rows
 
 ## Next Improvements
 

@@ -1,10 +1,11 @@
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { ChartDataSet, TimeFilterPreset, Trade, TradeStats } from '../types'
-import { formatDate, formatMoney, tooltipMoneyFormatter } from '../utils/tradeUtils'
+import type { TimeFilterPreset, Trade, TradeStats } from '../types'
+import type { EquityCurvePoint } from '../utils/equityCurve'
+import { formatDate, formatMoney } from '../utils/tradeUtils'
+import EquityCurveChart from './EquityCurveChart'
 
 type DashboardPanelProps = {
   stats: TradeStats
-  chartData: ChartDataSet
+  equityCurveData: EquityCurvePoint[]
   accentColor: string
   timeFilterPreset: TimeFilterPreset
   customDateStart: string
@@ -20,7 +21,7 @@ type DashboardPanelProps = {
 
 function DashboardPanel({
   stats,
-  chartData,
+  equityCurveData,
   accentColor,
   timeFilterPreset,
   customDateStart,
@@ -111,29 +112,7 @@ function DashboardPanel({
       <div className="dashboard-main-grid">
         <section className="minimal-section large-chart-card">
           <h4>Equity Curve</h4>
-          {chartData.pnlTrend.length > 0 ? (
-            <div className="chart-shell large">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData.pnlTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="label" />
-                  <YAxis />
-                  <Tooltip formatter={tooltipMoneyFormatter} />
-                  <Area
-                    type="monotone"
-                    dataKey="cumulativePnl"
-                    stroke={accentColor}
-                    fill={accentColor}
-                    fillOpacity={0.2}
-                    strokeWidth={2}
-                    name="Cumulative P&L"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="empty-copy">Log trades to render the equity curve.</p>
-          )}
+          <EquityCurveChart data={equityCurveData} accentColor={accentColor} />
         </section>
       </div>
 
