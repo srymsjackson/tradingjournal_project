@@ -2271,8 +2271,8 @@ td {
 
 .equity-chart-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 118px;
-  gap: 0.72rem;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 0.5rem;
   align-items: stretch;
 }
 
