@@ -2266,12 +2266,12 @@ td {
 }
 
 .large-chart-card .chart-shell.large {
-  height: 382px;
+  height: 460px;
 }
 
 .equity-chart-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 132px;
+  grid-template-columns: minmax(0, 1fr) 118px;
   gap: 0.72rem;
   align-items: stretch;
 }
