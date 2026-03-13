@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-const WELCOME_TITLE = 'ur journ.'
+const WELCOME_TITLE = 'this is ur journ.'
 const TITLE_TYPED_ONCE_KEY = 'urjourn-home-title-typed'
 
 const getTypeDurationMs = (text: string) => {
