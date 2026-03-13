@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { CartesianGrid, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useMemo, useState } from 'react'
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { EquityCurvePoint } from '../utils/equityCurve'
 import { formatMoney } from '../utils/tradeUtils'
 
@@ -7,6 +7,8 @@ type EquityCurveChartProps = {
   data: EquityCurvePoint[]
   accentColor: string
 }
+
+type GraphMode = 'equity' | 'daily' | 'drawdown'
 
 type EquityTooltipProps = {
   active?: boolean
@@ -28,6 +30,14 @@ const EquityTooltip = ({ active, payload }: EquityTooltipProps) => {
 }
 
 function EquityCurveChart({ data, accentColor }: EquityCurveChartProps) {
+  const [graphMode, setGraphMode] = useState<GraphMode>('equity')
+
+  const graphOptions: Array<{ id: GraphMode; label: string }> = [
+    { id: 'equity', label: 'equity' },
+    { id: 'daily', label: 'daily p&l' },
+    { id: 'drawdown', label: 'drawdown' },
+  ]
+
   const drawdownRanges = useMemo(() => {
     const ranges: Array<{ x1: string; x2: string }> = []
     let start: string | null = null
@@ -61,19 +71,54 @@ function EquityCurveChart({ data, accentColor }: EquityCurveChartProps) {
   }
 
   return (
-    <div className="chart-shell large">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 10, bottom: 4, left: 0 }}>
-          {drawdownRanges.map((range, index) => (
-            <ReferenceArea key={`${range.x1}-${range.x2}-${index}`} x1={range.x1} x2={range.x2} fill="rgba(212, 107, 95, 0.08)" />
-          ))}
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 123, 134, 0.24)" />
-          <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} minTickGap={20} />
-          <YAxis tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} tickFormatter={(value) => formatMoney(Number(value))} width={84} />
-          <Tooltip cursor={{ stroke: 'rgba(120, 123, 134, 0.38)', strokeDasharray: '3 3' }} content={<EquityTooltip />} />
-          <Line type="stepAfter" dataKey="cumulativePnl" stroke={accentColor} strokeWidth={2.2} dot={false} activeDot={{ r: 3 }} name="Cumulative P&L" />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="equity-chart-stack">
+      <div className="equity-chart-modes" role="tablist" aria-label="dashboard graph modes">
+        {graphOptions.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className={`equity-mode-btn ${graphMode === option.id ? 'active' : ''}`}
+            onClick={() => setGraphMode(option.id)}
+            role="tab"
+            aria-selected={graphMode === option.id}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="chart-shell large">
+        <ResponsiveContainer width="100%" height="100%">
+          {graphMode === 'equity' ? (
+            <LineChart data={data} margin={{ top: 8, right: 10, bottom: 4, left: 0 }}>
+              {drawdownRanges.map((range, index) => (
+                <ReferenceArea key={`${range.x1}-${range.x2}-${index}`} x1={range.x1} x2={range.x2} fill="rgba(212, 107, 95, 0.08)" />
+              ))}
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 123, 134, 0.24)" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} minTickGap={20} />
+              <YAxis tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} tickFormatter={(value) => formatMoney(Number(value))} width={84} />
+              <Tooltip cursor={{ stroke: 'rgba(120, 123, 134, 0.38)', strokeDasharray: '3 3' }} content={<EquityTooltip />} />
+              <Line type="stepAfter" dataKey="cumulativePnl" stroke={accentColor} strokeWidth={2.2} dot={false} activeDot={{ r: 3 }} name="Cumulative P&L" />
+            </LineChart>
+          ) : graphMode === 'daily' ? (
+            <BarChart data={data} margin={{ top: 8, right: 10, bottom: 4, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 123, 134, 0.24)" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} minTickGap={20} />
+              <YAxis tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} tickFormatter={(value) => formatMoney(Number(value))} width={84} />
+              <Tooltip cursor={{ fill: 'rgba(120, 123, 134, 0.08)' }} content={<EquityTooltip />} />
+              <Bar dataKey="netPnl" fill={accentColor} radius={[4, 4, 0, 0]} name="Daily P&L" />
+            </BarChart>
+          ) : (
+            <AreaChart data={data} margin={{ top: 8, right: 10, bottom: 4, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(120, 123, 134, 0.24)" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} minTickGap={20} />
+              <YAxis tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} tickFormatter={(value) => formatMoney(Number(value))} width={84} />
+              <Tooltip cursor={{ stroke: 'rgba(120, 123, 134, 0.38)', strokeDasharray: '3 3' }} content={<EquityTooltip />} />
+              <Area type="stepAfter" dataKey="drawdown" stroke="#db7d70" fill="rgba(219, 125, 112, 0.2)" strokeWidth={2} name="Drawdown" />
+            </AreaChart>
+          )}
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 }

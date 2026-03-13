@@ -2269,6 +2269,35 @@ td {
   height: 382px;
 }
 
+.equity-chart-stack {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.equity-chart-modes {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.equity-mode-btn {
+  border: 1px solid rgba(120, 123, 134, 0.33);
+  background: transparent;
+  color: #8d93a1;
+  border-radius: 999px;
+  padding: 0.2rem 0.58rem;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.equity-mode-btn.active {
+  color: #dbe2ef;
+  border-color: color-mix(in srgb, var(--accent), transparent 46%);
+  background: color-mix(in srgb, var(--accent), transparent 88%);
+}
+
 .equity-empty-state {
   min-height: 220px;
   border: 1px dashed rgba(120, 123, 134, 0.32);

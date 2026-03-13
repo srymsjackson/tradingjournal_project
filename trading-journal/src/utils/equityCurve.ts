@@ -4,6 +4,7 @@ import { formatDate } from './tradeCalculations'
 export type EquityCurvePoint = {
   date: string
   label: string
+  netPnl: number
   cumulativePnl: number
   tradeCount: number
   peakEquity: number
@@ -64,6 +65,7 @@ export const buildEquityCurveData = (trades: Trade[]): EquityCurvePoint[] => {
       return {
         date: day.date,
         label: formatDate(day.date),
+        netPnl: day.netPnl,
         cumulativePnl: running,
         tradeCount: day.tradeCount,
         peakEquity: runningPeak,
