@@ -71,22 +71,7 @@ function EquityCurveChart({ data, accentColor }: EquityCurveChartProps) {
   }
 
   return (
-    <div className="equity-chart-stack">
-      <div className="equity-chart-modes" role="tablist" aria-label="dashboard graph modes">
-        {graphOptions.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            className={`equity-mode-btn ${graphMode === option.id ? 'active' : ''}`}
-            onClick={() => setGraphMode(option.id)}
-            role="tab"
-            aria-selected={graphMode === option.id}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
+    <div className="equity-chart-layout">
       <div className="chart-shell large">
         <ResponsiveContainer width="100%" height="100%">
           {graphMode === 'equity' ? (
@@ -119,6 +104,24 @@ function EquityCurveChart({ data, accentColor }: EquityCurveChartProps) {
           )}
         </ResponsiveContainer>
       </div>
+
+      <aside className="equity-chart-options" role="tablist" aria-label="dashboard graph modes">
+        <p>graph type</p>
+        <div className="equity-chart-modes">
+          {graphOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className={`equity-mode-btn ${graphMode === option.id ? 'active' : ''}`}
+              onClick={() => setGraphMode(option.id)}
+              role="tab"
+              aria-selected={graphMode === option.id}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </aside>
     </div>
   )
 }

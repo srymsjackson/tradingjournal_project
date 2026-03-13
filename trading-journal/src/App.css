@@ -2269,15 +2269,32 @@ td {
   height: 382px;
 }
 
-.equity-chart-stack {
+.equity-chart-layout {
   display: grid;
-  gap: 0.55rem;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: 0.72rem;
+  align-items: stretch;
+}
+
+.equity-chart-options {
+  border-left: 1px solid rgba(120, 123, 134, 0.24);
+  padding-left: 0.62rem;
+  display: grid;
+  align-content: start;
+  gap: 0.42rem;
+}
+
+.equity-chart-options p {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .equity-chart-modes {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+  display: grid;
+  gap: 0.36rem;
 }
 
 .equity-mode-btn {
@@ -2285,11 +2302,12 @@ td {
   background: transparent;
   color: #8d93a1;
   border-radius: 999px;
-  padding: 0.2rem 0.58rem;
+  padding: 0.22rem 0.58rem;
   font-size: 0.73rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
+  text-align: left;
 }
 
 .equity-mode-btn.active {
@@ -2307,6 +2325,25 @@ td {
   text-align: center;
   padding: 1.2rem;
   background: rgba(255, 255, 255, 0.02);
+}
+
+@media (max-width: 980px) {
+  .equity-chart-layout {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .equity-chart-options {
+    border-left: 0;
+    border-top: 1px solid rgba(120, 123, 134, 0.24);
+    padding-left: 0;
+    padding-top: 0.52rem;
+  }
+
+  .equity-chart-modes {
+    display: flex;
+    flex-wrap: wrap;
+  }
 }
 
 .equity-empty-state h5 {
