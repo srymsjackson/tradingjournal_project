@@ -2085,6 +2085,85 @@ td {
   margin: 0;
 }
 
+.welcome-hero-title {
+  --typewriter-steps: 10;
+  --typewriter-duration: 1200ms;
+  --typewriter-cursor-color: color-mix(in srgb, var(--accent), white 22%);
+  --typewriter-cursor-width: 0.08em;
+  margin: 0 auto;
+  width: fit-content;
+  max-width: 100%;
+  line-height: 1.1;
+}
+
+.welcome-hero-title-text {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  vertical-align: bottom;
+  border-right: var(--typewriter-cursor-width) solid var(--typewriter-cursor-color);
+  padding-right: 0.04em;
+  max-width: 100%;
+}
+
+.welcome-hero-title.is-typing .welcome-hero-title-text {
+  width: 0;
+  animation:
+    typewriter-reveal var(--typewriter-duration) steps(var(--typewriter-steps), end) 120ms forwards,
+    typewriter-cursor-blink 720ms steps(1, end) 120ms infinite;
+}
+
+.welcome-hero-title:not(.is-typing) .welcome-hero-title-text {
+  animation: typewriter-cursor-blink 720ms steps(1, end) infinite;
+}
+
+.welcome-hero-title.cursor-fade .welcome-hero-title-text {
+  animation:
+    typewriter-reveal var(--typewriter-duration) steps(var(--typewriter-steps), end) 120ms forwards,
+    typewriter-cursor-blink 720ms steps(1, end) 120ms 3,
+    typewriter-cursor-fade 100ms linear forwards;
+  animation-delay: 120ms, 120ms, calc(var(--typewriter-duration) + 1000ms);
+}
+
+@keyframes typewriter-reveal {
+  from {
+    width: 0;
+  }
+  to {
+    width: calc(var(--typewriter-steps) * 1ch + 0.06em);
+  }
+}
+
+@keyframes typewriter-cursor-blink {
+  0%,
+  48% {
+    border-right-color: var(--typewriter-cursor-color);
+  }
+  49%,
+  100% {
+    border-right-color: transparent;
+  }
+}
+
+@keyframes typewriter-cursor-fade {
+  from {
+    border-right-color: var(--typewriter-cursor-color);
+  }
+  to {
+    border-right-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-hero-title .welcome-hero-title-text,
+  .welcome-hero-title.is-typing .welcome-hero-title-text,
+  .welcome-hero-title.cursor-fade .welcome-hero-title-text {
+    width: auto;
+    border-right: none;
+    animation: none;
+  }
+}
+
 .public-card p {
   color: var(--muted);
 }
