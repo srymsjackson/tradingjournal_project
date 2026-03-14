@@ -327,7 +327,6 @@ function JournalWorkspace({ initialSection = 'dashboard', initialTool = null, sh
                   onCustomDateStart={setCustomDateStart}
                   onCustomDateEnd={setCustomDateEnd}
                   onClearFilters={clearFilters}
-                  onExportJson={exportJson}
                   onLogTrade={() => setActiveSection('log-trade')}
                   recentTrades={filteredTrades}
                 />

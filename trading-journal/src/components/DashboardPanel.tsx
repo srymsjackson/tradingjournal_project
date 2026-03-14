@@ -13,7 +13,6 @@ type DashboardPanelProps = {
   onCustomDateStart: (value: string) => void
   onCustomDateEnd: (value: string) => void
   onClearFilters: () => void
-  onExportJson: () => void
   onLogTrade: () => void
   recentTrades: Trade[]
 }
@@ -29,7 +28,6 @@ function DashboardPanel({
   onCustomDateStart,
   onCustomDateEnd,
   onClearFilters,
-  onExportJson,
   onLogTrade,
   recentTrades,
 }: DashboardPanelProps) {
@@ -41,14 +39,14 @@ function DashboardPanel({
     { label: 'Custom', value: 'CUSTOM' },
   ]
 
-  const tradesForTable = recentTrades.slice(0, 8)
+  const tradesForTable = recentTrades.slice(0, 6)
 
   return (
     <section className="dashboard-panel trader-dashboard minimalist-dashboard">
       <div className="dashboard-topbar">
         <div>
           <h2>Dashboard</h2>
-          <p className="dashboard-subtitle">Trader-focused performance and behavior review.</p>
+          <p className="dashboard-subtitle">Quick performance snapshot.</p>
         </div>
         <div className="dashboard-topbar-controls">
           <div className="time-filter-chips">
@@ -78,9 +76,6 @@ function DashboardPanel({
           <div className="dashboard-topbar-actions">
             <button type="button" className="btn ghost" onClick={onClearFilters}>
               Reset
-            </button>
-            <button type="button" className="btn ghost" onClick={onExportJson}>
-              Export
             </button>
             <button type="button" className="btn primary" onClick={onLogTrade}>
               Log Trade
@@ -149,7 +144,6 @@ function DashboardPanel({
                   <th>Setup</th>
                   <th>Session</th>
                   <th>P&L</th>
-                  <th>Confidence</th>
                 </tr>
               </thead>
               <tbody>
@@ -160,7 +154,6 @@ function DashboardPanel({
                     <td>{trade.setup}</td>
                     <td>{trade.session}</td>
                     <td className={trade.pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(trade.pnl)}</td>
-                    <td>{trade.confidence}/5</td>
                   </tr>
                 ))}
               </tbody>

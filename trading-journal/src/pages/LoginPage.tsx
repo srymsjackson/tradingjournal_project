@@ -17,7 +17,7 @@ function LoginPage({ onLogin }: LoginPageProps) {
     <main className="public-shell">
       <section className="public-card auth-card">
         <h1>Log In</h1>
-        <p>Placeholder authentication screen for routing flow.</p>
+        <p>Pick up where you left off.</p>
         <form onSubmit={handleSubmit} className="auth-form">
           <label>
             Email

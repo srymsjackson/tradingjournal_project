@@ -5,7 +5,7 @@ function HomePage() {
     <main className="public-shell">
       <section className="public-card">
         <h1>ur journ.</h1>
-        <p>Focused journaling workspace for discretionary traders.</p>
+        <p>Simple trade journaling, built for daily use.</p>
         <div className="public-actions">
           <Link className="btn primary" to="/login">
             Log In

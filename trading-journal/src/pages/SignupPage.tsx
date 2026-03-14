@@ -17,7 +17,7 @@ function SignupPage({ onSignup }: SignupPageProps) {
     <main className="public-shell">
       <section className="public-card auth-card">
         <h1>Sign Up</h1>
-        <p>Placeholder registration screen for routing flow.</p>
+        <p>Create your journal workspace in seconds.</p>
         <form onSubmit={handleSubmit} className="auth-form">
           <label>
             Name
