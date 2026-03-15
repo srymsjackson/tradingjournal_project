@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import type { TimeFilterPreset, Trade, TradeStats } from '../types'
 import type { EquityCurvePoint } from '../utils/equityCurve'
 import { formatDate, formatMoney } from '../utils/tradeUtils'
@@ -34,6 +35,8 @@ function DashboardPanel({
   onLogTrade,
   recentTrades,
 }: DashboardPanelProps) {
+  const [showInsights, setShowInsights] = useState(false)
+
   const timeOptions: Array<{ label: string; value: TimeFilterPreset }> = [
     { label: 'Today', value: 'TODAY' },
     { label: 'Week', value: 'THIS_WEEK' },
@@ -43,6 +46,48 @@ function DashboardPanel({
   ]
 
   const tradesForTable = recentTrades.slice(0, 8)
+  const avgTrade = stats.totalTrades > 0 ? stats.netPnl / stats.totalTrades : 0
+
+  const insightSnapshot = useMemo(() => {
+    if (recentTrades.length === 0) return null
+
+    const sessions = recentTrades.reduce<Record<string, { wins: number; trades: number }>>((acc, trade) => {
+      const key = trade.session?.trim() || 'Unassigned'
+      if (!acc[key]) acc[key] = { wins: 0, trades: 0 }
+      acc[key].trades += 1
+      if (trade.pnl > 0) acc[key].wins += 1
+      return acc
+    }, {})
+
+    const setups = recentTrades.reduce<Record<string, { wins: number; trades: number }>>((acc, trade) => {
+      const key = trade.setup?.trim() || 'Unspecified'
+      if (!acc[key]) acc[key] = { wins: 0, trades: 0 }
+      acc[key].trades += 1
+      if (trade.pnl > 0) acc[key].wins += 1
+      return acc
+    }, {})
+
+    const rankedSessions = Object.entries(sessions)
+      .map(([name, value]) => ({
+        name,
+        trades: value.trades,
+        winRate: value.trades > 0 ? (value.wins / value.trades) * 100 : 0,
+      }))
+      .sort((a, b) => b.winRate - a.winRate || b.trades - a.trades)
+
+    const rankedSetups = Object.entries(setups)
+      .map(([name, value]) => ({
+        name,
+        trades: value.trades,
+        winRate: value.trades > 0 ? (value.wins / value.trades) * 100 : 0,
+      }))
+      .sort((a, b) => a.winRate - b.winRate || b.trades - a.trades)
+
+    return {
+      bestSession: rankedSessions[0] ?? null,
+      worstSetup: rankedSetups[0] ?? null,
+    }
+  }, [recentTrades])
 
   return (
     <section className="dashboard-panel trader-dashboard minimalist-dashboard">
@@ -104,6 +149,10 @@ function DashboardPanel({
           <h3 className="metric-value">{Number.isFinite(stats.profitFactor) ? stats.profitFactor.toFixed(2) : 'Infinity'}</h3>
         </article>
         <article className="primary-metric-card">
+          <p className="metric-label">Avg. Trade</p>
+          <h3 className={`metric-value ${avgTrade >= 0 ? 'pnl-positive' : 'pnl-negative'}`}>{formatMoney(avgTrade)}</h3>
+        </article>
+        <article className="primary-metric-card">
           <p className="metric-label">Total Trades</p>
           <h3 className="metric-value">{stats.totalTrades}</h3>
         </article>
@@ -111,8 +160,39 @@ function DashboardPanel({
 
       <div className="dashboard-main-grid">
         <section className="minimal-section large-chart-card">
-          <h4>Equity Curve</h4>
+          <div className="chart-insights-row">
+            <h4>Equity Curve</h4>
+            <button type="button" className={`mini-insights-btn ${showInsights ? 'active' : ''}`} onClick={() => setShowInsights((prev) => !prev)}>
+              current insights
+            </button>
+          </div>
           <EquityCurveChart data={equityCurveData} accentColor={accentColor} />
+
+          <div className="trade-extremes-row">
+            <article className="trade-extreme-card">
+              <small>Best Win</small>
+              <strong className="pnl-positive">{stats.bestTrade > 0 ? formatMoney(stats.bestTrade) : '--'}</strong>
+            </article>
+            <article className="trade-extreme-card">
+              <small>Worst Loss</small>
+              <strong className="pnl-negative">{stats.worstTrade < 0 ? formatMoney(stats.worstTrade) : '--'}</strong>
+            </article>
+          </div>
+
+          {showInsights && insightSnapshot && (
+            <section className="current-insights-panel" aria-live="polite">
+              <article>
+                <small>You perform best during</small>
+                <h5>{insightSnapshot.bestSession?.name ?? '--'}</h5>
+                <p>Win rate: {(insightSnapshot.bestSession?.winRate ?? 0).toFixed(0)}%</p>
+              </article>
+              <article>
+                <small>Worst setup</small>
+                <h5>{insightSnapshot.worstSetup?.name ?? '--'}</h5>
+                <p>Win rate: {(insightSnapshot.worstSetup?.winRate ?? 0).toFixed(0)}%</p>
+              </article>
+            </section>
+          )}
         </section>
       </div>
 

@@ -131,3 +131,11 @@ export const saveUserTradesToCloud = async (userId: string, trades: Trade[]): Pr
   const { error: insertError } = await client.from(TABLE).insert(rows)
   if (insertError) throw insertError
 }
+
+export const clearUserTradesFromCloud = async (userId: string): Promise<void> => {
+  if (!isSupabaseConfigured) return
+
+  const client = assertSupabaseConfigured()
+  const { error } = await client.from(TABLE).delete().eq('user_id', userId)
+  if (error) throw error
+}

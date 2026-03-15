@@ -10,7 +10,7 @@ function AppLayout({ onLogout }: AppLayoutProps) {
       <header className="route-header">
         <div>
           <h1>ur journ.</h1>
-          <p>Trade execution, journaling, and review workspace.</p>
+          <p>ur journal. ur trades. ur journey.</p>
         </div>
         <button type="button" className="btn ghost" onClick={onLogout}>
           Log Out

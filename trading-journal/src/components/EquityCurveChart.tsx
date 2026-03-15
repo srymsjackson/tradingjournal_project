@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { EquityCurvePoint } from '../utils/equityCurve'
 import { formatMoney } from '../utils/tradeUtils'
 
@@ -14,6 +14,8 @@ type EquityTooltipProps = {
   active?: boolean
   payload?: Array<{ value?: number; payload?: EquityCurvePoint }>
 }
+
+const DRAWDOWN_RED = '#db7d70'
 
 const EquityTooltip = ({ active, payload }: EquityTooltipProps) => {
   if (!active || !payload || payload.length === 0 || !payload[0]?.payload) return null
@@ -83,7 +85,7 @@ function EquityCurveChart({ data, accentColor }: EquityCurveChartProps) {
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} minTickGap={20} />
               <YAxis tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} tickFormatter={(value) => formatMoney(Number(value))} width={84} />
               <Tooltip cursor={{ stroke: 'rgba(120, 123, 134, 0.38)', strokeDasharray: '3 3' }} content={<EquityTooltip />} />
-              <Line type="stepAfter" dataKey="cumulativePnl" stroke={accentColor} strokeWidth={2.2} dot={false} activeDot={{ r: 3 }} name="Cumulative P&L" />
+              <Line type="monotone" dataKey="cumulativePnl" stroke={accentColor} strokeWidth={2.2} dot={false} activeDot={{ r: 3 }} name="Cumulative P&L" />
             </LineChart>
           ) : graphMode === 'daily' ? (
             <BarChart data={data} margin={{ top: 8, right: 10, bottom: 4, left: 0 }}>
@@ -91,7 +93,11 @@ function EquityCurveChart({ data, accentColor }: EquityCurveChartProps) {
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} minTickGap={20} />
               <YAxis tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} tickFormatter={(value) => formatMoney(Number(value))} width={84} />
               <Tooltip cursor={{ fill: 'rgba(120, 123, 134, 0.08)' }} content={<EquityTooltip />} />
-              <Bar dataKey="netPnl" fill={accentColor} radius={[4, 4, 0, 0]} name="Daily P&L" />
+              <Bar dataKey="netPnl" radius={[4, 4, 0, 0]} name="Daily P&L">
+                {data.map((entry) => (
+                  <Cell key={entry.label} fill={entry.netPnl < 0 ? DRAWDOWN_RED : accentColor} />
+                ))}
+              </Bar>
             </BarChart>
           ) : (
             <AreaChart data={data} margin={{ top: 8, right: 10, bottom: 4, left: 0 }}>
@@ -99,7 +105,7 @@ function EquityCurveChart({ data, accentColor }: EquityCurveChartProps) {
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} minTickGap={20} />
               <YAxis tick={{ fontSize: 11, fill: '#8d93a1' }} tickLine={false} axisLine={false} tickFormatter={(value) => formatMoney(Number(value))} width={84} />
               <Tooltip cursor={{ stroke: 'rgba(120, 123, 134, 0.38)', strokeDasharray: '3 3' }} content={<EquityTooltip />} />
-              <Area type="stepAfter" dataKey="drawdown" stroke="#db7d70" fill="rgba(219, 125, 112, 0.2)" strokeWidth={2} name="Drawdown" />
+              <Area type="monotone" dataKey="drawdown" stroke={DRAWDOWN_RED} fill="rgba(219, 125, 112, 0.2)" strokeWidth={2} name="Drawdown" />
             </AreaChart>
           )}
         </ResponsiveContainer>

@@ -104,9 +104,18 @@ function App() {
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage userId={session?.user.id ?? ''} />} />
-          <Route path="journal" element={<JournalPage userId={session?.user.id ?? ''} />} />
-          <Route path="review" element={<ReviewPage userId={session?.user.id ?? ''} />} />
+          <Route
+            path="dashboard"
+            element={<DashboardPage userId={session?.user.id ?? ''} userEmail={session?.user.email ?? ''} onSignOut={handleLogout} />}
+          />
+          <Route
+            path="journal"
+            element={<JournalPage userId={session?.user.id ?? ''} userEmail={session?.user.email ?? ''} onSignOut={handleLogout} />}
+          />
+          <Route
+            path="review"
+            element={<ReviewPage userId={session?.user.id ?? ''} userEmail={session?.user.email ?? ''} onSignOut={handleLogout} />}
+          />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 

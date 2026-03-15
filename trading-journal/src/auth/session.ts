@@ -68,3 +68,22 @@ export const signOutUser = async () => {
   const { error } = await client.auth.signOut()
   if (error) throw error
 }
+
+export const updateUserPassword = async (newPassword: string) => {
+  const client = assertSupabaseConfigured()
+  const { data, error } = await client.auth.updateUser({ password: newPassword })
+  if (error) throw normalizeAuthError(error, 'Unable to update password.')
+  return data
+}
+
+export const deleteCurrentAccount = async () => {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase is not configured. Account deletion is unavailable.')
+  }
+
+  const client = assertSupabaseConfigured()
+  const { error } = await client.rpc('delete_my_account')
+  if (error) {
+    throw normalizeAuthError(error, 'Unable to delete account.')
+  }
+}

@@ -89,3 +89,57 @@ drop policy if exists "trades_delete_own" on public.trades;
 create policy "trades_delete_own"
   on public.trades for delete
   using (auth.uid() = user_id);
+
+-- User-scoped settings/preferences.
+create table if not exists public.user_preferences (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  trading_preferences jsonb not null default '{}'::jsonb,
+  favorite_symbols jsonb not null default '[]'::jsonb,
+  theme_mode text not null default 'dark',
+  accent_color text not null default '#3a86a8',
+  session_tracking jsonb not null default '{"asia": true, "london": true, "newYork": true}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.user_preferences enable row level security;
+
+drop policy if exists "preferences_select_own" on public.user_preferences;
+create policy "preferences_select_own"
+  on public.user_preferences for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "preferences_insert_own" on public.user_preferences;
+create policy "preferences_insert_own"
+  on public.user_preferences for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "preferences_update_own" on public.user_preferences;
+create policy "preferences_update_own"
+  on public.user_preferences for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "preferences_delete_own" on public.user_preferences;
+create policy "preferences_delete_own"
+  on public.user_preferences for delete
+  using (auth.uid() = user_id);
+
+-- Deletes the currently authenticated user account.
+-- Must be created by a role with privileges on auth.users.
+create or replace function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+revoke all on function public.delete_my_account() from public;
+grant execute on function public.delete_my_account() to authenticated;
