@@ -113,9 +113,10 @@ function App() {
             element={<JournalPage userId={session?.user.id ?? ''} userEmail={session?.user.email ?? ''} onSignOut={handleLogout} />}
           />
           <Route
-            path="review"
+            path="trade-history"
             element={<ReviewPage userId={session?.user.id ?? ''} userEmail={session?.user.email ?? ''} onSignOut={handleLogout} />}
           />
+          <Route path="review" element={<Navigate to="/app/trade-history" replace />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
