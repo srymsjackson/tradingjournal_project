@@ -9,6 +9,10 @@ const normalizeAuthError = (error: unknown, fallbackMessage: string): Error => {
       return new Error('Unable to reach authentication service. Check your network and Supabase URL/key configuration.')
     }
 
+    if (/rate limit|too many requests|over_email_send_rate_limit/i.test(message)) {
+      return new Error('Too many auth attempts right now. Please wait a minute and try again, or use a different email while testing.')
+    }
+
     return error
   }
 
