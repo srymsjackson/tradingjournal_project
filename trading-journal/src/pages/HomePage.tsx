@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import BackgroundScene from '../components/BackgroundScene'
+import Hero from '../components/Hero'
+import '../components/Hero.css'
 
 const WELCOME_TITLE = 'this is ur journ.'
 const TITLE_TYPED_ONCE_KEY = 'urjourn-home-title-typed'
@@ -41,26 +43,33 @@ function HomePage() {
   return (
     <main className="public-shell">
       <BackgroundScene />
-      <section className="public-card">
-        <h1
-          className={`welcome-hero-title ${shouldAnimate ? 'is-typing' : ''} ${hideCursorAfterTyping ? 'cursor-fade' : ''}`}
-          style={{
-            ['--typewriter-steps' as string]: String(WELCOME_TITLE.length),
-            ['--typewriter-duration' as string]: `${typeDurationMs}ms`,
-          }}
-        >
-          <span className="welcome-hero-title-text" aria-label={WELCOME_TITLE}>
-            {WELCOME_TITLE}
-          </span>
-        </h1>
-        <p>Focused journaling workspace for discretionary traders.</p>
-        <div className="public-actions">
-          <Link className="btn primary" to="/login">
-            Log In
-          </Link>
-          <Link className="btn ghost" to="/signup">
-            Sign Up
-          </Link>
+      <Hero />
+      <section className="hj-features public-card" aria-labelledby="features-heading">
+        <h2 id="features-heading" className="hj-features-heading">Designed for traders who want clarity and speed</h2>
+        <div className="hj-features-grid">
+          <article className="hj-feature-card">
+            <div className="hj-feature-icon" aria-hidden>⚡</div>
+            <div>
+              <h3 className="hj-feature-title">Fast trade logging</h3>
+              <p className="hj-feature-desc">Record trades in seconds with keyboard-first entry and sensible defaults.</p>
+            </div>
+          </article>
+
+          <article className="hj-feature-card">
+            <div className="hj-feature-icon" aria-hidden>📈</div>
+            <div>
+              <h3 className="hj-feature-title">Performance analytics</h3>
+              <p className="hj-feature-desc">Clear charts and animated summaries help you identify what actually works.</p>
+            </div>
+          </article>
+
+          <article className="hj-feature-card">
+            <div className="hj-feature-icon" aria-hidden>🔒</div>
+            <div>
+              <h3 className="hj-feature-title">Secure account tracking</h3>
+              <p className="hj-feature-desc">Privacy-first account controls with optional cloud sync and export tools.</p>
+            </div>
+          </article>
         </div>
       </section>
     </main>
