@@ -22,6 +22,15 @@ export default function BackgroundScene() {
       canvas.style.width = `${w}px`
       canvas.style.height = `${h}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      try {
+        // rebuild points to match new size (if buildPoints exists)
+        // buildPoints is defined later in this scope
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        if (typeof buildPoints === 'function') buildPoints()
+      } catch {
+        /* ignore */
+      }
     }
 
     resize()
@@ -32,6 +41,23 @@ export default function BackgroundScene() {
     const baseRadius = 1.25
     const maxOffset = 12
     const influence = 120
+
+    // precompute grid points for performance
+    let points: { x: number; y: number }[] = []
+    function buildPoints() {
+      points = []
+      const w = Math.ceil(window.innerWidth / spacing) * spacing
+      const h = Math.ceil(window.innerHeight / spacing) * spacing
+      const startX = spacing / 2
+      const startY = spacing / 2
+      for (let x = startX; x < w; x += spacing) {
+        for (let y = startY; y < h; y += spacing) {
+          points.push({ x, y })
+        }
+      }
+    }
+
+    buildPoints()
 
     let mx = -9999
     let my = -9999
@@ -49,41 +75,43 @@ export default function BackgroundScene() {
       const h = canvas.height / dpr
       ctx.clearRect(0, 0, w, h)
 
-      ctx.fillStyle = 'rgba(230,238,234,0.06)'
-      ctx.beginPath()
+      // single base color; per-point alpha via globalAlpha
+      ctx.fillStyle = 'rgb(230,238,234)'
 
-      // iterate grid
-      const startX = spacing / 2
-      const startY = spacing / 2
+      const infSq = influence * influence
 
-      for (let x = startX; x < w; x += spacing) {
-        for (let y = startY; y < h; y += spacing) {
-          const dx = x - mx
-          const dy = y - my
-          const dist = Math.hypot(dx, dy)
-          let ox = 0
-          let oy = 0
-          let r = baseRadius
-          let alpha = 0.06
+      // draw each point using fast rect fills and globalAlpha
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i]
+        const dx = p.x - mx
+        const dy = p.y - my
+        const distSq = dx * dx + dy * dy
 
-          if (dist < influence) {
-            const t = 1 - dist / influence
-            const force = t * t // ease
-            const push = maxOffset * force
-            // repel away from cursor
-            const inv = dist === 0 ? 0 : push / dist
-            ox = -dx * inv
-            oy = -dy * inv
-            r = baseRadius + 2 * force
-            alpha = 0.08 + 0.22 * force
-          }
+        let ox = 0
+        let oy = 0
+        let r = baseRadius
+        let alpha = 0.06
 
-          ctx.moveTo(x + ox + r, y + oy)
-          ctx.arc(x + ox, y + oy, r, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(230,238,234,${alpha})`
-          ctx.fill()
+        if (distSq < infSq) {
+          const dist = Math.sqrt(distSq)
+          const t = 1 - dist / influence
+          const force = t * t
+          const push = maxOffset * force
+          const inv = dist === 0 ? 0 : push / dist
+          ox = -dx * inv
+          oy = -dy * inv
+          r = baseRadius + 2 * force
+          alpha = 0.08 + 0.22 * force
         }
+
+        ctx.globalAlpha = alpha
+        // fast draw: small square represents a dot; subpixel size OK
+        const size = Math.max(1, Math.round(r * 2))
+        ctx.fillRect(p.x + ox - size / 2, p.y + oy - size / 2, size, size)
       }
+
+      // reset alpha
+      ctx.globalAlpha = 1
     }
 
     rafRef.current = requestAnimationFrame(draw)
