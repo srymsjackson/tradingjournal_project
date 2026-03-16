@@ -68,7 +68,7 @@ function TradeEntryPanel({
                 type="text"
                 placeholder="AAPL"
                 value={form.symbol}
-                onChange={(e) => onUpdateForm('symbol', e.target.value)}
+                onChange={(e) => onUpdateForm('symbol', e.target.value.toUpperCase())}
                 required
                 maxLength={10}
                 list="symbol-options"

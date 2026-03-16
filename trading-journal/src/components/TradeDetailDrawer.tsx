@@ -91,7 +91,7 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
               </label>
               <label>
                 Symbol
-                <input type="text" value={draft.symbol} maxLength={10} onChange={(e) => updateDraft('symbol', e.target.value)} />
+                <input type="text" value={draft.symbol} maxLength={10} onChange={(e) => updateDraft('symbol', e.target.value.toUpperCase())} />
               </label>
               <label>
                 Side

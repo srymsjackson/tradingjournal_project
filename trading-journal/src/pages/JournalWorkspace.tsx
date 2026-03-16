@@ -796,7 +796,7 @@ function JournalWorkspace({ userId, userEmail = '', onSignOut, initialSection = 
                           <input
                             type="text"
                             value={favoriteSymbolInput}
-                            onChange={(event) => setFavoriteSymbolInput(event.target.value)}
+                            onChange={(event) => setFavoriteSymbolInput(event.target.value.toUpperCase())}
                             placeholder="symbol"
                           />
                           <button type="button" className="btn ghost" onClick={addFavoriteSymbol}>
