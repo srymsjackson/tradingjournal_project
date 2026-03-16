@@ -55,7 +55,7 @@ function DashboardPanel({
       const key = trade.session?.trim() || 'Unassigned'
       if (!acc[key]) acc[key] = { wins: 0, trades: 0 }
       acc[key].trades += 1
-      if (trade.pnl > 0) acc[key].wins += 1
+      if (trade.netPnl > 0) acc[key].wins += 1
       return acc
     }, {})
 
@@ -63,7 +63,7 @@ function DashboardPanel({
       const key = trade.setup?.trim() || 'Unspecified'
       if (!acc[key]) acc[key] = { wins: 0, trades: 0 }
       acc[key].trades += 1
-      if (trade.pnl > 0) acc[key].wins += 1
+      if (trade.netPnl > 0) acc[key].wins += 1
       return acc
     }, {})
 
@@ -214,11 +214,11 @@ function DashboardPanel({
               <tbody>
                 {tradesForTable.map((trade) => (
                   <tr key={trade.id}>
-                    <td>{formatDate(trade.date)}</td>
+                    <td>{formatDate(trade.tradeDate)}</td>
                     <td>{trade.symbol}</td>
                     <td>{trade.setup}</td>
                     <td>{trade.session}</td>
-                    <td className={trade.pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(trade.pnl)}</td>
+                    <td className={trade.netPnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(trade.netPnl)}</td>
                     <td>{trade.confidence}/5</td>
                   </tr>
                 ))}

@@ -6,7 +6,19 @@ type ParsedCsvResult = {
   skippedRows: number
 }
 
-const REQUIRED_HEADERS = ['date', 'symbol', 'side', 'entry', 'exit', 'shares', 'pnl', 'setup', 'session'] as const
+const CANONICAL_HEADERS = ['trade_date', 'symbol', 'side', 'entry_price', 'exit_price', 'quantity', 'setup', 'session'] as const
+
+const HEADER_ALIASES: Record<(typeof CANONICAL_HEADERS)[number] | 'net_pnl', string[]> = {
+  trade_date: ['trade_date', 'date'],
+  symbol: ['symbol'],
+  side: ['side'],
+  entry_price: ['entry_price', 'entry'],
+  exit_price: ['exit_price', 'exit'],
+  quantity: ['quantity', 'shares'],
+  setup: ['setup'],
+  session: ['session'],
+  net_pnl: ['net_pnl', 'pnl'],
+}
 
 const normalizeHeader = (value: string) => value.trim().toLowerCase().replace(/^\uFEFF/, '')
 
@@ -88,7 +100,16 @@ const parseDurationSeconds = (value: string) => {
   return 0
 }
 
-const hasRequiredHeaders = (headers: string[]) => REQUIRED_HEADERS.every((header) => headers.includes(header))
+const findHeaderIndex = (headers: string[], canonicalName: keyof typeof HEADER_ALIASES) => {
+  const aliases = HEADER_ALIASES[canonicalName]
+  for (const alias of aliases) {
+    const index = headers.indexOf(alias)
+    if (index >= 0) return index
+  }
+  return -1
+}
+
+const hasRequiredHeaders = (headers: string[]) => CANONICAL_HEADERS.every((header) => findHeaderIndex(headers, header) >= 0)
 
 export const parseNormalizedTradeCsvText = (csvText: string): ParsedCsvResult => {
   const rows = parseCsvRows(csvText)
@@ -99,15 +120,15 @@ export const parseNormalizedTradeCsvText = (csvText: string): ParsedCsvResult =>
     throw new Error('CSV is missing one or more required columns.')
   }
 
-  const dateIndex = headers.indexOf('date')
-  const symbolIndex = headers.indexOf('symbol')
-  const sideIndex = headers.indexOf('side')
-  const entryIndex = headers.indexOf('entry')
-  const exitIndex = headers.indexOf('exit')
-  const sharesIndex = headers.indexOf('shares')
-  const pnlIndex = headers.indexOf('pnl')
-  const setupIndex = headers.indexOf('setup')
-  const sessionIndex = headers.indexOf('session')
+  const dateIndex = findHeaderIndex(headers, 'trade_date')
+  const symbolIndex = findHeaderIndex(headers, 'symbol')
+  const sideIndex = findHeaderIndex(headers, 'side')
+  const entryIndex = findHeaderIndex(headers, 'entry_price')
+  const exitIndex = findHeaderIndex(headers, 'exit_price')
+  const quantityIndex = findHeaderIndex(headers, 'quantity')
+  const netPnlIndex = findHeaderIndex(headers, 'net_pnl')
+  const setupIndex = findHeaderIndex(headers, 'setup')
+  const sessionIndex = findHeaderIndex(headers, 'session')
   const brokerIndex = headers.indexOf('broker')
   const durationIndex = headers.indexOf('duration')
 
@@ -115,50 +136,56 @@ export const parseNormalizedTradeCsvText = (csvText: string): ParsedCsvResult =>
   let skippedRows = 0
 
   rows.slice(1).forEach((row, index) => {
-    const date = row[dateIndex]?.trim() || ''
+    const tradeDate = row[dateIndex]?.trim() || ''
     const symbol = row[symbolIndex]?.trim().toUpperCase() || ''
     const side = parseSide(row[sideIndex] || '')
-    const entry = parseNumber(row[entryIndex] || '')
-    const exit = parseNumber(row[exitIndex] || '')
-    const shares = parseNumber(row[sharesIndex] || '')
-    const pnl = parseNumber(row[pnlIndex] || '')
+    const entryPrice = parseNumber(row[entryIndex] || '')
+    const exitPrice = parseNumber(row[exitIndex] || '')
+    const quantity = parseNumber(row[quantityIndex] || '')
+    const netPnlRaw = netPnlIndex >= 0 ? parseNumber(row[netPnlIndex] || '') : Number.NaN
     const setup = row[setupIndex]?.trim() || 'imported'
     const session = row[sessionIndex]?.trim() || 'open'
     const broker = brokerIndex >= 0 ? (row[brokerIndex]?.trim().toLowerCase() ?? '') : ''
     const durationSec = durationIndex >= 0 ? parseDurationSeconds(row[durationIndex] || '') : 0
 
-    if (!date || !symbol || !side || !Number.isFinite(entry) || !Number.isFinite(exit) || !Number.isFinite(shares) || shares <= 0 || !Number.isFinite(pnl)) {
+    if (!tradeDate || !symbol || !side || !Number.isFinite(entryPrice) || !Number.isFinite(exitPrice) || !Number.isFinite(quantity) || quantity <= 0) {
       skippedRows += 1
       return
     }
 
-    const costBasis = entry * shares
+    const resolvedNetPnl = Number.isFinite(netPnlRaw)
+      ? netPnlRaw
+      : side === 'LONG'
+        ? (exitPrice - entryPrice) * quantity
+        : (entryPrice - exitPrice) * quantity
+
+    const costBasis = entryPrice * quantity
     const pnlResult = calculatePnL({
       symbol,
       broker,
       side: side === 'LONG' ? 'long' : 'short',
-      entry,
-      exit,
-      qty: shares,
+      entry: entryPrice,
+      exit: exitPrice,
+      qty: quantity,
       fees: 0,
-      realizedPnL: pnl,
+      realizedPnL: resolvedNetPnl,
     })
 
     trades.push({
       id: crypto.randomUUID(),
-      date,
+      tradeDate,
       symbol,
       broker,
       side,
       setup,
       session,
       marketCondition: 'imported',
-      entry,
-      exit,
-      shares,
+      entryPrice,
+      exitPrice,
+      quantity,
       fees: 0,
-      pnlHigh: pnl,
-      pnlLow: pnl,
+      pnlHigh: resolvedNetPnl,
+      pnlLow: resolvedNetPnl,
       durationSec,
       confidence: 3,
       notes: 'imported from normalized csv',
@@ -175,8 +202,8 @@ export const parseNormalizedTradeCsvText = (csvText: string): ParsedCsvResult =>
       calculationMethod: pnlResult.calculationMethod,
       assetClass: pnlResult.specUsed?.assetClass,
       quantityType: pnlResult.specUsed?.quantityType,
-      realizedPnl: pnl,
-      pnl: pnlResult.net,
+      realizedPnl: resolvedNetPnl,
+      netPnl: pnlResult.net,
       returnPct: costBasis > 0 ? (pnlResult.net / costBasis) * 100 : 0,
       createdAt: Date.now() + index,
     })

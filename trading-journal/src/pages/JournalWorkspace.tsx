@@ -155,6 +155,21 @@ function JournalWorkspace({ userId, userEmail = '', onSignOut, initialSection = 
   })
 
   useEffect(() => {
+    if (!userId) {
+      setTrades([])
+      setSavedSymbols([])
+      setSavedSetups([])
+      setForm(initialForm())
+      return
+    }
+
+    setTrades(loadTrades(userId))
+    setSavedSymbols(loadSymbols(userId))
+    setSavedSetups(loadSetups(userId))
+    setForm(initialForm())
+  }, [userId])
+
+  useEffect(() => {
     if (!userId) return
 
     let isCancelled = false
@@ -250,7 +265,7 @@ function JournalWorkspace({ userId, userEmail = '', onSignOut, initialSection = 
     if (addAnother) {
       setForm((prev) => ({
         ...initialForm(),
-        date: prev.date,
+        tradeDate: prev.tradeDate,
         symbol,
         side: prev.side,
         setup,
@@ -547,7 +562,7 @@ function JournalWorkspace({ userId, userEmail = '', onSignOut, initialSection = 
       setImportStatusTone('success')
     } catch {
       setImportStatusTone('error')
-      setImportStatus('import failed. csv must include: date,symbol,side,entry,exit,shares,pnl,setup,session')
+      setImportStatus('import failed. csv must include: trade_date,symbol,side,entry_price,exit_price,quantity,setup,session')
     }
 
     event.target.value = ''

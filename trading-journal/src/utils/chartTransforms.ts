@@ -11,16 +11,16 @@ export const tooltipMoneyFormatter = (value: number | string | ReadonlyArray<num
 export const getChartData = (trades: Trade[]): ChartDataSet => {
   const sortedByDateAsc = trades
     .slice()
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.createdAt - b.createdAt)
+    .sort((a, b) => new Date(a.tradeDate).getTime() - new Date(b.tradeDate).getTime() || a.createdAt - b.createdAt)
 
   let runningPnl = 0
   const groupedByDay = sortedByDateAsc.reduce<Record<string, { date: string; netPnl: number; tradeCount: number; cumulativePnl: number }>>(
     (acc, trade) => {
-      if (!acc[trade.date]) {
-        acc[trade.date] = { date: trade.date, netPnl: 0, tradeCount: 0, cumulativePnl: 0 }
+      if (!acc[trade.tradeDate]) {
+        acc[trade.tradeDate] = { date: trade.tradeDate, netPnl: 0, tradeCount: 0, cumulativePnl: 0 }
       }
-      acc[trade.date].netPnl += trade.pnl
-      acc[trade.date].tradeCount += 1
+      acc[trade.tradeDate].netPnl += trade.netPnl
+      acc[trade.tradeDate].tradeCount += 1
       return acc
     },
     {},
@@ -42,9 +42,9 @@ export const getChartData = (trades: Trade[]): ChartDataSet => {
     if (!acc[setup]) {
       acc[setup] = { setup, netPnl: 0, trades: 0, wins: 0 }
     }
-    acc[setup].netPnl += trade.pnl
+    acc[setup].netPnl += trade.netPnl
     acc[setup].trades += 1
-    acc[setup].wins += trade.pnl > 0 ? 1 : 0
+    acc[setup].wins += trade.netPnl > 0 ? 1 : 0
     return acc
   }, {})
 
@@ -64,7 +64,7 @@ export const getChartData = (trades: Trade[]): ChartDataSet => {
       if (!acc[symbol]) {
         acc[symbol] = { symbol, netPnl: 0, trades: 0 }
       }
-      acc[symbol].netPnl += trade.pnl
+      acc[symbol].netPnl += trade.netPnl
       acc[symbol].trades += 1
       return acc
     },
@@ -82,8 +82,8 @@ export const getChartData = (trades: Trade[]): ChartDataSet => {
         acc[key] = { side: key, trades: 0, wins: 0, netPnl: 0 }
       }
       acc[key].trades += 1
-      acc[key].wins += trade.pnl > 0 ? 1 : 0
-      acc[key].netPnl += trade.pnl
+      acc[key].wins += trade.netPnl > 0 ? 1 : 0
+      acc[key].netPnl += trade.netPnl
       return acc
     },
     { LONG: { side: 'LONG', trades: 0, wins: 0, netPnl: 0 }, SHORT: { side: 'SHORT', trades: 0, wins: 0, netPnl: 0 } },
@@ -107,8 +107,8 @@ export const getChartData = (trades: Trade[]): ChartDataSet => {
       acc[session] = { session, trades: 0, wins: 0, netPnl: 0 }
     }
     acc[session].trades += 1
-    acc[session].wins += trade.pnl > 0 ? 1 : 0
-    acc[session].netPnl += trade.pnl
+    acc[session].wins += trade.netPnl > 0 ? 1 : 0
+    acc[session].netPnl += trade.netPnl
     return acc
   }, {})
 
@@ -130,14 +130,14 @@ export const getChartData = (trades: Trade[]): ChartDataSet => {
   }
 
   const groupedDay = trades.reduce<Record<string, { day: string; trades: number; wins: number; netPnl: number }>>((acc, trade) => {
-    const date = parseTradeDate(trade.date)
+    const date = parseTradeDate(trade.tradeDate)
     const day = dayLookup[date.getDay()] || 'Mon'
     if (!acc[day]) {
       acc[day] = { day, trades: 0, wins: 0, netPnl: 0 }
     }
     acc[day].trades += 1
-    acc[day].wins += trade.pnl > 0 ? 1 : 0
-    acc[day].netPnl += trade.pnl
+    acc[day].wins += trade.netPnl > 0 ? 1 : 0
+    acc[day].netPnl += trade.netPnl
     return acc
   }, {})
 
@@ -164,8 +164,8 @@ export const getChartData = (trades: Trade[]): ChartDataSet => {
         acc[tag] = { tag, count: 0, wins: 0, netPnl: 0 }
       }
       acc[tag].count += 1
-      acc[tag].wins += trade.pnl > 0 ? 1 : 0
-      acc[tag].netPnl += trade.pnl
+      acc[tag].wins += trade.netPnl > 0 ? 1 : 0
+      acc[tag].netPnl += trade.netPnl
     }
     return acc
   }, {})
@@ -178,8 +178,8 @@ export const getChartData = (trades: Trade[]): ChartDataSet => {
         acc[tag] = { tag, count: 0, wins: 0, netPnl: 0 }
       }
       acc[tag].count += 1
-      acc[tag].wins += trade.pnl > 0 ? 1 : 0
-      acc[tag].netPnl += trade.pnl
+      acc[tag].wins += trade.netPnl > 0 ? 1 : 0
+      acc[tag].netPnl += trade.netPnl
     }
     return acc
   }, {})
@@ -208,8 +208,8 @@ export const getChartData = (trades: Trade[]): ChartDataSet => {
     (acc, trade) => {
       const bucket: 'Followed' | 'Broken' = trade.brokeRules || !trade.ruleFollowed ? 'Broken' : 'Followed'
       acc[bucket].trades += 1
-      acc[bucket].wins += trade.pnl > 0 ? 1 : 0
-      acc[bucket].netPnl += trade.pnl
+      acc[bucket].wins += trade.netPnl > 0 ? 1 : 0
+      acc[bucket].netPnl += trade.netPnl
       return acc
     },
     {

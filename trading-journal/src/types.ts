@@ -37,12 +37,12 @@ export type TradeAttachment = {
 }
 
 export type SampleTradeInput = {
-  date: string
+  tradeDate: string
   symbol: string
   side: 'Long' | 'Short'
-  entry: number
-  exit: number
-  shares: number
+  entryPrice: number
+  exitPrice: number
+  quantity: number
   fees: number
   pnlHigh: number
   pnlLow: number
@@ -53,15 +53,15 @@ export type SampleTradeInput = {
 
 export type Trade = {
   id: string
-  date: string
+  tradeDate: string
   symbol: string
   side: Side
   setup: string
   session: string
   marketCondition: string
-  entry: number
-  exit: number
-  shares: number
+  entryPrice: number
+  exitPrice: number
+  quantity: number
   fees: number
   pnlHigh: number
   pnlLow: number
@@ -83,21 +83,21 @@ export type Trade = {
   grossPnl?: number
   calculationMethod?: 'imported' | 'calculated'
   realizedPnl?: number | null
-  pnl: number
+  netPnl: number
   returnPct: number
   createdAt: number
 }
 
 export type TradeFormData = {
-  date: string
+  tradeDate: string
   symbol: string
   side: Side
   setup: string
   session: string
   marketCondition: string
-  entry: number
-  exit: number
-  shares: number
+  entryPrice: number
+  exitPrice: number
+  quantity: number
   fees: number
   pnlHigh: number
   pnlLow: number

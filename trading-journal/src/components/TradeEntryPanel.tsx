@@ -52,9 +52,9 @@ function TradeEntryPanel({
       symbol: form.symbol,
       broker: form.broker,
       side: sideToCalculatorSide(form.side),
-      entry: form.entry,
-      exit: form.exit,
-      qty: form.shares,
+      entry: form.entryPrice,
+      exit: form.exitPrice,
+      qty: form.quantity,
       fees: form.fees,
       realizedPnL: form.realizedPnl,
     }).net
@@ -79,7 +79,7 @@ function TradeEntryPanel({
           <div className="grid two-col compact-grid">
             <label>
               Date
-              <input type="date" value={form.date} onChange={(e) => onUpdateForm('date', e.target.value)} required />
+              <input type="date" value={form.tradeDate} onChange={(e) => onUpdateForm('tradeDate', e.target.value)} required />
             </label>
             <label>
               Broker (optional)
@@ -264,8 +264,8 @@ function TradeEntryPanel({
                 type="number"
                 min="0"
                 step="0.01"
-                value={form.entry || ''}
-                onChange={(e) => onUpdateForm('entry', Number(e.target.value))}
+                value={form.entryPrice || ''}
+                onChange={(e) => onUpdateForm('entryPrice', Number(e.target.value))}
                 required
               />
             </label>
@@ -275,8 +275,8 @@ function TradeEntryPanel({
                 type="number"
                 min="0"
                 step="0.01"
-                value={form.exit || ''}
-                onChange={(e) => onUpdateForm('exit', Number(e.target.value))}
+                value={form.exitPrice || ''}
+                onChange={(e) => onUpdateForm('exitPrice', Number(e.target.value))}
                 required
               />
             </label>
@@ -286,8 +286,8 @@ function TradeEntryPanel({
                 type="number"
                 min="1"
                 step="1"
-                value={form.shares || ''}
-                onChange={(e) => onUpdateForm('shares', Number(e.target.value))}
+                value={form.quantity || ''}
+                onChange={(e) => onUpdateForm('quantity', Number(e.target.value))}
                 required
               />
             </label>

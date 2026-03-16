@@ -35,15 +35,15 @@ const toLocalIsoDate = (date: Date) => `${date.getFullYear()}-${pad2(date.getMon
 export const today = () => toLocalIsoDate(new Date())
 
 export const initialForm = (): TradeFormData => ({
-  date: today(),
+  tradeDate: today(),
   symbol: '',
   side: 'LONG',
   setup: '',
   session: 'Open',
   marketCondition: 'Trending',
-  entry: 0,
-  exit: 0,
-  shares: 0,
+  entryPrice: 0,
+  exitPrice: 0,
+  quantity: 0,
   fees: 0,
   pnlHigh: 0,
   pnlLow: 0,
@@ -72,22 +72,22 @@ export const loadTrades = (userId?: string): Trade[] => {
     if (!Array.isArray(parsed)) return []
 
     return parsed.map((item) => {
-      const entry = Number(item.entry) || 0
-      const exit = Number(item.exit) || 0
-      const shares = Number(item.shares) || 0
+      const entryPrice = Number(item.entryPrice ?? item.entry) || 0
+      const exitPrice = Number(item.exitPrice ?? item.exit) || 0
+      const quantity = Number(item.quantity ?? item.shares) || 0
       const fees = Number(item.fees) || 0
-      const hasProvidedPnl = Number.isFinite(Number(item.pnl))
+      const hasProvidedPnl = Number.isFinite(Number(item.netPnl ?? item.pnl))
       const fallbackPnl =
         String(item.side || '').toUpperCase() === 'SHORT'
-          ? (entry - exit) * shares - fees
-          : (exit - entry) * shares - fees
-      const pnl = hasProvidedPnl ? Number(item.pnl) : fallbackPnl
-      const pnlHigh = Number.isFinite(Number(item.pnlHigh)) ? Number(item.pnlHigh) : pnl
-      const pnlLow = Number.isFinite(Number(item.pnlLow)) ? Number(item.pnlLow) : pnl
+          ? (entryPrice - exitPrice) * quantity - fees
+          : (exitPrice - entryPrice) * quantity - fees
+      const netPnl = hasProvidedPnl ? Number(item.netPnl ?? item.pnl) : fallbackPnl
+      const pnlHigh = Number.isFinite(Number(item.pnlHigh)) ? Number(item.pnlHigh) : netPnl
+      const pnlLow = Number.isFinite(Number(item.pnlLow)) ? Number(item.pnlLow) : netPnl
       const durationSec = Number.isFinite(Number(item.durationSec)) && Number(item.durationSec) >= 0 ? Number(item.durationSec) : 0
       const broker = String(item.broker || '').trim()
 
-      let netPnl = hasProvidedPnl ? Number(item.pnl) : 0
+      let resolvedNetPnl = hasProvidedPnl ? Number(item.netPnl ?? item.pnl) : 0
       let grossPnl: number | undefined = Number.isFinite(Number(item.grossPnl)) ? Number(item.grossPnl) : undefined
       let assetClass = typeof item.assetClass === 'string' ? item.assetClass : undefined
       let quantityType = typeof item.quantityType === 'string' ? item.quantityType : undefined
@@ -98,14 +98,14 @@ export const loadTrades = (userId?: string): Trade[] => {
           symbol: String(item.symbol || ''),
           broker,
           side: sideToCalculatorSide(String(item.side || '').toUpperCase() === 'SHORT' ? 'SHORT' : 'LONG'),
-          entry,
-          exit,
-          qty: shares,
+          entry: entryPrice,
+          exit: exitPrice,
+          qty: quantity,
           fees,
-          realizedPnL: hasProvidedPnl ? Number(item.pnl) : null,
+          realizedPnL: hasProvidedPnl ? Number(item.netPnl ?? item.pnl) : null,
         })
 
-        netPnl = pnlResult.net
+        resolvedNetPnl = pnlResult.net
         grossPnl = pnlResult.gross
         assetClass = pnlResult.specUsed?.assetClass ?? assetClass
         quantityType = pnlResult.specUsed?.quantityType ?? quantityType
@@ -116,26 +116,27 @@ export const loadTrades = (userId?: string): Trade[] => {
 
       return {
         ...item,
-        entry,
+        tradeDate: String(item.tradeDate || item.date || today()),
+        entryPrice,
         broker,
         session: String(item.session || 'Open'),
         marketCondition: String(item.marketCondition || 'Trending'),
-        exit,
-        shares,
+        exitPrice,
+        quantity,
         fees,
-        pnl: netPnl,
+        netPnl: resolvedNetPnl,
         grossPnl,
         calculationMethod,
         assetClass,
         quantityType,
-        realizedPnl: hasProvidedPnl ? Number(item.pnl) : null,
+        realizedPnl: hasProvidedPnl ? Number(item.netPnl ?? item.pnl) : null,
         pnlHigh,
         pnlLow,
         durationSec,
         returnPct: Number.isFinite(Number(item.returnPct))
           ? Number(item.returnPct)
-          : entry * shares > 0
-            ? (netPnl / (entry * shares)) * 100
+          : entryPrice * quantity > 0
+            ? (resolvedNetPnl / (entryPrice * quantity)) * 100
             : 0,
         ruleFollowed: item.ruleFollowed !== false,
         setupWasValid: item.setupWasValid !== false,
@@ -282,11 +283,11 @@ export type TradeFilterOptions = {
 
 export const filterTrades = (trades: Trade[], options: TradeFilterOptions) =>
   trades
-    .filter((trade) => isTradeInRange(trade.date, options.timeFilterPreset, options.customDateStart, options.customDateEnd))
+    .filter((trade) => isTradeInRange(trade.tradeDate, options.timeFilterPreset, options.customDateStart, options.customDateEnd))
     .filter((trade) => (options.filterSymbol === 'ALL' ? true : trade.symbol === options.filterSymbol))
     .filter((trade) => (options.filterSetup === 'ALL' ? true : trade.setup === options.filterSetup))
     .filter((trade) => {
       if (options.filterOutcome === 'ALL') return true
-      if (options.filterOutcome === 'WIN') return trade.pnl > 0
-      return trade.pnl < 0
+      if (options.filterOutcome === 'WIN') return trade.netPnl > 0
+      return trade.netPnl < 0
     })

@@ -21,10 +21,10 @@ export const validateTradeForm = (form: TradeFormData): TradeFormValidationResul
   const session = form.session.trim()
   const marketCondition = form.marketCondition.trim()
 
-  if (!form.date || !symbol || !setup || !session || !marketCondition || form.entry <= 0 || form.exit <= 0 || form.shares <= 0) {
+  if (!form.tradeDate || !symbol || !setup || !session || !marketCondition || form.entryPrice <= 0 || form.exitPrice <= 0 || form.quantity <= 0) {
     return {
       isValid: false,
-      error: 'Fill required fields: date, symbol, setup, prices, and share size.',
+      error: 'Fill required fields: date, symbol, setup, prices, and quantity.',
     }
   }
 

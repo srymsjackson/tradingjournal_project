@@ -40,11 +40,11 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
   const normalizedTrade = useMemo(() => {
     if (!draft) return null
 
-    const entry = Math.max(0, Number(draft.entry) || 0)
-    const exit = Math.max(0, Number(draft.exit) || 0)
-    const shares = Math.max(0, Number(draft.shares) || 0)
+    const entryPrice = Math.max(0, Number(draft.entryPrice) || 0)
+    const exitPrice = Math.max(0, Number(draft.exitPrice) || 0)
+    const quantity = Math.max(0, Number(draft.quantity) || 0)
     const fees = Math.max(0, Number(draft.fees) || 0)
-    const costBasis = entry * shares
+    const costBasis = entryPrice * quantity
 
     let pnlResult
     try {
@@ -52,14 +52,14 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
         symbol: draft.symbol,
         broker: draft.broker,
         side: sideToCalculatorSide(draft.side),
-        entry,
-        exit,
-        qty: shares,
+        entry: entryPrice,
+        exit: exitPrice,
+        qty: quantity,
         fees,
         realizedPnL: draft.realizedPnl ?? null,
       })
     } catch {
-      const fallbackNet = Number.isFinite(Number(draft.pnl)) ? Number(draft.pnl) : 0
+      const fallbackNet = Number.isFinite(Number(draft.netPnl)) ? Number(draft.netPnl) : 0
       pnlResult = {
         gross: fallbackNet + fees,
         net: fallbackNet,
@@ -67,7 +67,7 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
       }
     }
 
-    const pnl = pnlResult.net
+    const netPnl = pnlResult.net
 
     return {
       ...draft,
@@ -77,19 +77,19 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
       marketCondition: draft.marketCondition.trim() || 'Trending',
       broker: (draft.broker || '').trim().toLowerCase(),
       notes: draft.notes.trim(),
-      entry,
-      exit,
-      shares,
+      entryPrice,
+      exitPrice,
+      quantity,
       fees,
       durationSec: Math.max(0, Math.floor(Number(draft.durationSec) || 0)),
-      pnlHigh: Number(draft.pnlHigh) || pnl,
-      pnlLow: Number(draft.pnlLow) || pnl,
+      pnlHigh: Number(draft.pnlHigh) || netPnl,
+      pnlLow: Number(draft.pnlLow) || netPnl,
       grossPnl: pnlResult.gross,
       calculationMethod: pnlResult.calculationMethod,
       assetClass: pnlResult.specUsed?.assetClass,
       quantityType: pnlResult.specUsed?.quantityType,
-      pnl,
-      returnPct: costBasis > 0 ? (pnl / costBasis) * 100 : 0,
+      netPnl,
+      returnPct: costBasis > 0 ? (netPnl / costBasis) * 100 : 0,
     }
   }, [draft])
 
@@ -101,9 +101,9 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
         symbol: draft.symbol,
         broker: draft.broker,
         side: sideToCalculatorSide(draft.side),
-        entry: Number(draft.entry) || 0,
-        exit: Number(draft.exit) || 0,
-        qty: Number(draft.shares) || 0,
+        entry: Number(draft.entryPrice) || 0,
+        exit: Number(draft.exitPrice) || 0,
+        qty: Number(draft.quantity) || 0,
         fees: Number(draft.fees) || 0,
         realizedPnL: draft.realizedPnl ?? null,
       })
@@ -124,7 +124,7 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
         <header className="review-drawer-head">
           <div>
             <h3>Trade Review</h3>
-            <p>{normalizedTrade.symbol} · {normalizedTrade.side} · {normalizedTrade.date}</p>
+            <p>{normalizedTrade.symbol} · {normalizedTrade.side} · {normalizedTrade.tradeDate}</p>
           </div>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close trade review">
             Close
@@ -137,7 +137,7 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
             <div className="grid two-col compact-grid">
               <label>
                 Date
-                <input type="date" value={draft.date} onChange={(e) => updateDraft('date', e.target.value)} />
+                <input type="date" value={draft.tradeDate} onChange={(e) => updateDraft('tradeDate', e.target.value)} />
               </label>
               <label>
                 Symbol
@@ -185,15 +185,15 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
             <div className="grid three-col compact-grid">
               <label>
                 Entry
-                <input type="number" min="0" step="0.01" value={draft.entry || ''} onChange={(e) => updateDraft('entry', Number(e.target.value))} />
+                <input type="number" min="0" step="0.01" value={draft.entryPrice || ''} onChange={(e) => updateDraft('entryPrice', Number(e.target.value))} />
               </label>
               <label>
                 Exit
-                <input type="number" min="0" step="0.01" value={draft.exit || ''} onChange={(e) => updateDraft('exit', Number(e.target.value))} />
+                <input type="number" min="0" step="0.01" value={draft.exitPrice || ''} onChange={(e) => updateDraft('exitPrice', Number(e.target.value))} />
               </label>
               <label>
                 {quantityLabel.charAt(0).toUpperCase() + quantityLabel.slice(1)}
-                <input type="number" min="0" step="1" value={draft.shares || ''} onChange={(e) => updateDraft('shares', Number(e.target.value))} />
+                <input type="number" min="0" step="1" value={draft.quantity || ''} onChange={(e) => updateDraft('quantity', Number(e.target.value))} />
               </label>
               <label>
                 Fees
@@ -221,11 +221,11 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
             <div className="review-metrics-row">
               <article>
                 <small>Gross P&amp;L</small>
-                <p className={(normalizedTrade.grossPnl ?? 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(normalizedTrade.grossPnl ?? normalizedTrade.pnl)}</p>
+                <p className={(normalizedTrade.grossPnl ?? 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(normalizedTrade.grossPnl ?? normalizedTrade.netPnl)}</p>
               </article>
               <article>
                 <small>Net P&amp;L</small>
-                <p className={normalizedTrade.pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(normalizedTrade.pnl)}</p>
+                <p className={normalizedTrade.netPnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(normalizedTrade.netPnl)}</p>
               </article>
               <article>
                 <small>Return %</small>

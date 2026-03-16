@@ -35,32 +35,32 @@ export const buildTradeFromForm = (form: TradeFormData): Trade => {
     symbol,
     broker,
     side: sideToCalculatorSide(form.side),
-    entry: form.entry,
-    exit: form.exit,
-    qty: form.shares,
+    entry: form.entryPrice,
+    exit: form.exitPrice,
+    qty: form.quantity,
     fees: form.fees,
     realizedPnL: form.realizedPnl,
   })
 
-  const pnl = pnlResult.net
-  const costBasis = form.entry * form.shares
+  const netPnl = pnlResult.net
+  const costBasis = form.entryPrice * form.quantity
   const durationTotalSec = form.durationMin * 60 + form.durationSec
 
   return {
     id: crypto.randomUUID(),
-    date: form.date,
+    tradeDate: form.tradeDate,
     symbol,
     side: form.side,
     broker,
     setup,
     session: form.session,
     marketCondition: form.marketCondition,
-    entry: form.entry,
-    exit: form.exit,
-    shares: form.shares,
+    entryPrice: form.entryPrice,
+    exitPrice: form.exitPrice,
+    quantity: form.quantity,
     fees: form.fees,
-    pnlHigh: form.pnlHigh || pnl,
-    pnlLow: form.pnlLow || pnl,
+    pnlHigh: form.pnlHigh || netPnl,
+    pnlLow: form.pnlLow || netPnl,
     durationSec: durationTotalSec,
     confidence: form.confidence,
     notes,
@@ -78,23 +78,23 @@ export const buildTradeFromForm = (form: TradeFormData): Trade => {
     assetClass: pnlResult.specUsed?.assetClass,
     quantityType: pnlResult.specUsed?.quantityType,
     realizedPnl: form.realizedPnl,
-    pnl,
-    returnPct: costBasis > 0 ? (pnl / costBasis) * 100 : 0,
+    netPnl,
+    returnPct: costBasis > 0 ? (netPnl / costBasis) * 100 : 0,
     createdAt: Date.now(),
   }
 }
 
 export const createFormFromTrade = (trade: Trade): TradeFormData => ({
-  date: trade.date,
+  tradeDate: trade.tradeDate,
   symbol: trade.symbol,
   side: trade.side,
   setup: trade.setup,
   session: trade.session,
   marketCondition: trade.marketCondition,
   broker: trade.broker || '',
-  entry: trade.entry,
-  exit: trade.exit,
-  shares: trade.shares,
+  entryPrice: trade.entryPrice,
+  exitPrice: trade.exitPrice,
+  quantity: trade.quantity,
   fees: trade.fees,
   pnlHigh: trade.pnlHigh,
   pnlLow: trade.pnlLow,
@@ -116,32 +116,32 @@ export const createFormFromTrade = (trade: Trade): TradeFormData => ({
 export const buildSeedTradesFromSample = (sampleTrades: SampleTradeInput[]): Trade[] =>
   sampleTrades.map((item, index) => {
     const side: Side = toSide(item.side)
-    const rawPnl = side === 'LONG' ? (item.exit - item.entry) * item.shares : (item.entry - item.exit) * item.shares
+    const rawPnl = side === 'LONG' ? (item.exitPrice - item.entryPrice) * item.quantity : (item.entryPrice - item.exitPrice) * item.quantity
     const seedNet = rawPnl - item.fees
     const pnlResult = calculatePnL({
       symbol: item.symbol.trim().toUpperCase(),
       side: sideToCalculatorSide(side),
-      entry: item.entry,
-      exit: item.exit,
-      qty: item.shares,
+      entry: item.entryPrice,
+      exit: item.exitPrice,
+      qty: item.quantity,
       fees: item.fees,
       realizedPnL: seedNet,
     })
-    const pnl = pnlResult.net
-    const costBasis = item.entry * item.shares
+    const netPnl = pnlResult.net
+    const costBasis = item.entryPrice * item.quantity
 
     return {
       id: crypto.randomUUID(),
-      date: usDateToIso(item.date),
+      tradeDate: usDateToIso(item.tradeDate),
       symbol: item.symbol.trim().toUpperCase(),
       side,
       broker: '',
       setup: item.setup,
       session: 'Open',
       marketCondition: 'Trending',
-      entry: item.entry,
-      exit: item.exit,
-      shares: item.shares,
+      entryPrice: item.entryPrice,
+      exitPrice: item.exitPrice,
+      quantity: item.quantity,
       fees: item.fees,
       pnlHigh: item.pnlHigh,
       pnlLow: item.pnlLow,
@@ -162,14 +162,14 @@ export const buildSeedTradesFromSample = (sampleTrades: SampleTradeInput[]): Tra
       assetClass: pnlResult.specUsed?.assetClass,
       quantityType: pnlResult.specUsed?.quantityType,
       realizedPnl: seedNet,
-      pnl,
-      returnPct: costBasis > 0 ? (pnl / costBasis) * 100 : 0,
+      netPnl,
+      returnPct: costBasis > 0 ? (netPnl / costBasis) * 100 : 0,
       createdAt: Date.now() + index,
     }
   })
 
 export const getStats = (trades: Trade[]): TradeStats => {
-  const pnlValues = trades.map((t) => Number(t.pnl) || 0)
+  const pnlValues = trades.map((t) => Number(t.netPnl) || 0)
   const winners = pnlValues.filter((p) => p > 0)
   const losers = pnlValues.filter((p) => p < 0)
   const grossProfit = winners.reduce((sum, value) => sum + value, 0)
@@ -197,12 +197,12 @@ export const getSymbolStats = (trades: Trade[]): Record<string, SymbolStat> => {
       }
 
       acc[symbol].total += 1
-      if (trade.pnl > 0) {
+      if (trade.netPnl > 0) {
         acc[symbol].wins += 1
-        acc[symbol].winPnl.push(trade.pnl)
+        acc[symbol].winPnl.push(trade.netPnl)
         acc[symbol].winDurations.push(trade.durationSec)
-      } else if (trade.pnl < 0) {
-        acc[symbol].lossPnl.push(trade.pnl)
+      } else if (trade.netPnl < 0) {
+        acc[symbol].lossPnl.push(trade.netPnl)
         acc[symbol].lossDurations.push(trade.durationSec)
       }
       return acc
@@ -247,12 +247,12 @@ export const getReviewInsights = (trades: Trade[]): ReviewInsights => {
 
   const sortedByNewest = trades
     .slice()
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.createdAt - a.createdAt)
+    .sort((a, b) => new Date(b.tradeDate).getTime() - new Date(a.tradeDate).getTime() || b.createdAt - a.createdAt)
 
   let streakDirection: 'win' | 'loss' | 'flat' = 'flat'
   let streakCount = 0
   for (const trade of sortedByNewest) {
-    const direction: 'win' | 'loss' | 'flat' = trade.pnl > 0 ? 'win' : trade.pnl < 0 ? 'loss' : 'flat'
+    const direction: 'win' | 'loss' | 'flat' = trade.netPnl > 0 ? 'win' : trade.netPnl < 0 ? 'loss' : 'flat'
     if (streakCount === 0) {
       streakDirection = direction
       streakCount = 1
@@ -271,8 +271,8 @@ export const getReviewInsights = (trades: Trade[]): ReviewInsights => {
       acc[key] = { setup: key, trades: 0, wins: 0, netPnl: 0 }
     }
     acc[key].trades += 1
-    acc[key].wins += trade.pnl > 0 ? 1 : 0
-    acc[key].netPnl += trade.pnl
+    acc[key].wins += trade.netPnl > 0 ? 1 : 0
+    acc[key].netPnl += trade.netPnl
     return acc
   }, {})
 
@@ -314,7 +314,7 @@ export const getWeeklyReview = (trades: Trade[]): WeeklyReview => {
   }
 
   const weeklyTrades = trades.filter((trade) => {
-    const date = parseTradeDate(trade.date)
+    const date = parseTradeDate(trade.tradeDate)
     return date >= weekStart && date <= today
   })
 
@@ -336,7 +336,7 @@ export const getWeeklyReview = (trades: Trade[]): WeeklyReview => {
 
   const setupBuckets = weeklyTrades.reduce<Record<string, number>>((acc, trade) => {
     const key = trade.setup.trim() || 'Unspecified'
-    acc[key] = (acc[key] || 0) + trade.pnl
+    acc[key] = (acc[key] || 0) + trade.netPnl
     return acc
   }, {})
 
@@ -347,10 +347,10 @@ export const getWeeklyReview = (trades: Trade[]): WeeklyReview => {
   const bestSetup = setupRanked[0] ?? null
   const worstSetup = setupRanked[setupRanked.length - 1] ?? null
 
-  const winners = weeklyTrades.filter((trade) => trade.pnl > 0)
-  const losers = weeklyTrades.filter((trade) => trade.pnl < 0)
-  const avgWinner = winners.length > 0 ? winners.reduce((sum, trade) => sum + trade.pnl, 0) / winners.length : 0
-  const avgLoser = losers.length > 0 ? losers.reduce((sum, trade) => sum + trade.pnl, 0) / losers.length : 0
+  const winners = weeklyTrades.filter((trade) => trade.netPnl > 0)
+  const losers = weeklyTrades.filter((trade) => trade.netPnl < 0)
+  const avgWinner = winners.length > 0 ? winners.reduce((sum, trade) => sum + trade.netPnl, 0) / winners.length : 0
+  const avgLoser = losers.length > 0 ? losers.reduce((sum, trade) => sum + trade.netPnl, 0) / losers.length : 0
 
   const mistakeCounts = weeklyTrades.reduce<Record<string, number>>((acc, trade) => {
     for (const tag of trade.mistakeTags) {
@@ -366,7 +366,7 @@ export const getWeeklyReview = (trades: Trade[]): WeeklyReview => {
 
   const sessionBuckets = weeklyTrades.reduce<Record<string, number>>((acc, trade) => {
     const key = trade.session.trim() || 'Unspecified'
-    acc[key] = (acc[key] || 0) + trade.pnl
+    acc[key] = (acc[key] || 0) + trade.netPnl
     return acc
   }, {})
 
@@ -381,10 +381,10 @@ export const getWeeklyReview = (trades: Trade[]): WeeklyReview => {
   const ruleBrokenTrades = weeklyTrades.filter((trade) => trade.brokeRules || !trade.ruleFollowed)
 
   const calcRuleStats = (subset: Trade[]) => {
-    const wins = subset.filter((trade) => trade.pnl > 0).length
+    const wins = subset.filter((trade) => trade.netPnl > 0).length
     return {
       trades: subset.length,
-      netPnl: subset.reduce((sum, trade) => sum + trade.pnl, 0),
+      netPnl: subset.reduce((sum, trade) => sum + trade.netPnl, 0),
       winRate: subset.length > 0 ? (wins / subset.length) * 100 : 0,
     }
   }

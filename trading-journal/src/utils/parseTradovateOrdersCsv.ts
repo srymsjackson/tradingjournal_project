@@ -12,9 +12,9 @@ export type TradovateExecution = {
 export type ReconstructedTrade = {
   symbol: string
   side: 'LONG' | 'SHORT'
-  entry: number
-  exit: number
-  shares: number
+  entryPrice: number
+  exitPrice: number
+  quantity: number
   entryTime: string
   exitTime: string
   durationSeconds: number | null
@@ -171,9 +171,9 @@ const reconstructTrades = (executions: TradovateExecution[]) => {
           completedTrades.push({
             symbol,
             side: 'SHORT',
-            entry: shortLot.fillPrice,
-            exit: execution.fillPrice,
-            shares: matchedShares,
+            entryPrice: shortLot.fillPrice,
+            exitPrice: execution.fillPrice,
+            quantity: matchedShares,
             entryTime: toIso(shortLot.fillTime),
             exitTime: toIso(execution.fillTime),
             durationSeconds: toDurationSeconds(shortLot.fillTime, execution.fillTime),
@@ -204,9 +204,9 @@ const reconstructTrades = (executions: TradovateExecution[]) => {
           completedTrades.push({
             symbol,
             side: 'LONG',
-            entry: longLot.fillPrice,
-            exit: execution.fillPrice,
-            shares: matchedShares,
+            entryPrice: longLot.fillPrice,
+            exitPrice: execution.fillPrice,
+            quantity: matchedShares,
             entryTime: toIso(longLot.fillTime),
             exitTime: toIso(execution.fillTime),
             durationSeconds: toDurationSeconds(longLot.fillTime, execution.fillTime),

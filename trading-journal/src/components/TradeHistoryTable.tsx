@@ -9,14 +9,14 @@ type TradeHistoryTableProps = {
   onUpdateTrade: (trade: Trade) => void
 }
 
-type SortKey = 'date' | 'symbol' | 'side' | 'setup' | 'shares' | 'pnl' | 'durationSec' | 'confidence'
+type SortKey = 'tradeDate' | 'symbol' | 'side' | 'setup' | 'quantity' | 'netPnl' | 'durationSec' | 'confidence'
 
 function TradeHistoryTable({ trades, onDeleteTrade, onUpdateTrade }: TradeHistoryTableProps) {
   const [symbolFilter, setSymbolFilter] = useState<string>('ALL')
   const [setupFilter, setSetupFilter] = useState<string>('ALL')
   const [sideFilter, setSideFilter] = useState<'ALL' | 'LONG' | 'SHORT'>('ALL')
   const [outcomeFilter, setOutcomeFilter] = useState<'ALL' | 'WIN' | 'LOSS'>('ALL')
-  const [sortKey, setSortKey] = useState<SortKey>('date')
+  const [sortKey, setSortKey] = useState<SortKey>('tradeDate')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null)
   const [isReviewOpen, setIsReviewOpen] = useState<boolean>(false)
@@ -35,14 +35,14 @@ function TradeHistoryTable({ trades, onDeleteTrade, onUpdateTrade }: TradeHistor
       .filter((trade) => (sideFilter === 'ALL' ? true : trade.side === sideFilter))
       .filter((trade) => {
         if (outcomeFilter === 'ALL') return true
-        if (outcomeFilter === 'WIN') return trade.pnl > 0
-        return trade.pnl < 0
+        if (outcomeFilter === 'WIN') return trade.netPnl > 0
+        return trade.netPnl < 0
       })
 
     const sorted = filtered.slice().sort((a, b) => {
-      if (sortKey === 'date') {
-        const left = new Date(a.date).getTime() || 0
-        const right = new Date(b.date).getTime() || 0
+      if (sortKey === 'tradeDate') {
+        const left = new Date(a.tradeDate).getTime() || 0
+        const right = new Date(b.tradeDate).getTime() || 0
         if (left === right) return a.createdAt - b.createdAt
         return left - right
       }
@@ -69,7 +69,7 @@ function TradeHistoryTable({ trades, onDeleteTrade, onUpdateTrade }: TradeHistor
       return
     }
     setSortKey(nextKey)
-    setSortDirection(nextKey === 'date' ? 'desc' : 'asc')
+    setSortDirection(nextKey === 'tradeDate' ? 'desc' : 'asc')
   }
 
   const sortIndicator = (key: SortKey) => {
@@ -148,8 +148,8 @@ function TradeHistoryTable({ trades, onDeleteTrade, onUpdateTrade }: TradeHistor
           <thead>
             <tr>
               <th>
-                <button type="button" className="table-sort-btn" onClick={() => setSorting('date')}>
-                  Date <span>{sortIndicator('date')}</span>
+                <button type="button" className="table-sort-btn" onClick={() => setSorting('tradeDate')}>
+                  Date <span>{sortIndicator('tradeDate')}</span>
                 </button>
               </th>
               <th>
@@ -168,13 +168,13 @@ function TradeHistoryTable({ trades, onDeleteTrade, onUpdateTrade }: TradeHistor
                 </button>
               </th>
               <th>
-                <button type="button" className="table-sort-btn" onClick={() => setSorting('shares')}>
-                  Qty <span>{sortIndicator('shares')}</span>
+                <button type="button" className="table-sort-btn" onClick={() => setSorting('quantity')}>
+                  Qty <span>{sortIndicator('quantity')}</span>
                 </button>
               </th>
               <th>
-                <button type="button" className="table-sort-btn" onClick={() => setSorting('pnl')}>
-                  Net P&amp;L <span>{sortIndicator('pnl')}</span>
+                <button type="button" className="table-sort-btn" onClick={() => setSorting('netPnl')}>
+                  Net P&amp;L <span>{sortIndicator('netPnl')}</span>
                 </button>
               </th>
               <th>
@@ -211,7 +211,7 @@ function TradeHistoryTable({ trades, onDeleteTrade, onUpdateTrade }: TradeHistor
                       setIsReviewOpen(true)
                     }}
                   >
-                    <td>{formatDate(trade.date)}</td>
+                    <td>{formatDate(trade.tradeDate)}</td>
                     <td>
                       <span className="symbol-pill">{trade.symbol}</span>
                     </td>
@@ -221,8 +221,8 @@ function TradeHistoryTable({ trades, onDeleteTrade, onUpdateTrade }: TradeHistor
                     <td>
                       <span className="setup-pill">{trade.setup}</span>
                     </td>
-                    <td>{trade.shares}</td>
-                    <td className={trade.pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(trade.pnl)}</td>
+                    <td>{trade.quantity}</td>
+                    <td className={trade.netPnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(trade.netPnl)}</td>
                     <td>{formatDuration(trade.durationSec)}</td>
                     <td>
                       <span className={`confidence-pill ${confidenceClass}`}>{trade.confidence}/5</span>

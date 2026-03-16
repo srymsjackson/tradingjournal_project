@@ -34,19 +34,19 @@ const toTime = (rawDate: string) => {
 }
 
 const resolvePnl = (trade: Trade) => {
-  if (Number.isFinite(trade.pnl)) return trade.pnl
+  if (Number.isFinite(trade.netPnl)) return trade.netPnl
   const direction = trade.side === 'SHORT' ? -1 : 1
-  return (trade.exit - trade.entry) * trade.shares * direction - trade.fees
+  return (trade.exitPrice - trade.entryPrice) * trade.quantity * direction - trade.fees
 }
 
 export const buildEquityCurveData = (trades: Trade[]): EquityCurvePoint[] => {
-  const sorted = trades.slice().sort((a, b) => toTime(a.date) - toTime(b.date) || a.createdAt - b.createdAt)
+  const sorted = trades.slice().sort((a, b) => toTime(a.tradeDate) - toTime(b.tradeDate) || a.createdAt - b.createdAt)
 
   const byDate = sorted.reduce<Record<string, { date: string; tradeCount: number; netPnl: number }>>((acc, trade) => {
-    const key = trade.date
+    const key = trade.tradeDate
     const pnl = resolvePnl(trade)
     if (!acc[key]) {
-      acc[key] = { date: trade.date, tradeCount: 0, netPnl: 0 }
+      acc[key] = { date: trade.tradeDate, tradeCount: 0, netPnl: 0 }
     }
 
     acc[key].tradeCount += 1
