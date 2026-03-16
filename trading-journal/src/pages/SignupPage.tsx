@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import BackgroundScene from '../components/BackgroundScene'
 
 type SignupPageProps = {
   onSignup: (email: string, password: string) => Promise<boolean>
@@ -59,6 +60,7 @@ function SignupPage({ onSignup }: SignupPageProps) {
 
   return (
     <main className="public-shell">
+      <BackgroundScene />
       <section className="public-card auth-card">
         <h1>Sign Up</h1>
         <p>Placeholder registration screen for routing flow.</p>

@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import BackgroundScene from '../components/BackgroundScene'
 import { useState } from 'react'
 
 type LoginPageProps = {
@@ -30,6 +31,7 @@ function LoginPage({ onLogin }: LoginPageProps) {
 
   return (
     <main className="public-shell">
+      <BackgroundScene />
       <section className="public-card auth-card">
         <h1>Log In</h1>
         <p>Placeholder authentication screen for routing flow.</p>
