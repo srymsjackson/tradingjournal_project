@@ -1,0 +1,35 @@
+.background-scene {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.background-layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity, filter;
+}
+
+.bg-gradient-1 {
+  background: radial-gradient(circle at 10% 15%, rgba(44,156,113,0.12) 0, transparent 36%);
+  mix-blend-mode: screen;
+  opacity: 0.9;
+  transform: translate3d(0,0,0);
+}
+
+.bg-gradient-2 {
+  background: radial-gradient(circle at 90% 5%, rgba(58,134,168,0.08) 0, transparent 30%);
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+.bg-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .background-scene { display: none; }
+}

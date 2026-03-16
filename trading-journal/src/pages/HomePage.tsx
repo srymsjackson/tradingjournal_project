@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import CursorEffect from '../components/CursorEffect'
+import BackgroundScene from '../components/BackgroundScene'
 
 const WELCOME_TITLE = 'this is ur journ.'
 const TITLE_TYPED_ONCE_KEY = 'urjourn-home-title-typed'
@@ -40,7 +40,7 @@ function HomePage() {
 
   return (
     <main className="public-shell">
-      <CursorEffect />
+      <BackgroundScene />
       <section className="public-card">
         <h1
           className={`welcome-hero-title ${shouldAnimate ? 'is-typing' : ''} ${hideCursorAfterTyping ? 'cursor-fade' : ''}`}
