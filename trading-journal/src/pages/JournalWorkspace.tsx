@@ -229,7 +229,14 @@ function JournalWorkspace({ userId, userEmail = '', onSignOut, initialSection = 
 
     const { symbol, setup } = validation.normalized
 
-    const newTrade = buildTradeFromForm(form)
+    let newTrade
+    try {
+      newTrade = buildTradeFromForm(form)
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to calculate P&L for this trade.')
+      return
+    }
+
     persistTrades([newTrade, ...trades])
     setFormError('')
 

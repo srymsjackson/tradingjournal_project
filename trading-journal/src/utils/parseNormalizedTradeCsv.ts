@@ -1,4 +1,5 @@
 import type { Side, Trade } from '../types'
+import { calculatePnL } from '../lib/pnlEngine'
 
 type ParsedCsvResult = {
   trades: Trade[]
@@ -107,6 +108,7 @@ export const parseNormalizedTradeCsvText = (csvText: string): ParsedCsvResult =>
   const pnlIndex = headers.indexOf('pnl')
   const setupIndex = headers.indexOf('setup')
   const sessionIndex = headers.indexOf('session')
+  const brokerIndex = headers.indexOf('broker')
   const durationIndex = headers.indexOf('duration')
 
   const trades: Trade[] = []
@@ -122,6 +124,7 @@ export const parseNormalizedTradeCsvText = (csvText: string): ParsedCsvResult =>
     const pnl = parseNumber(row[pnlIndex] || '')
     const setup = row[setupIndex]?.trim() || 'imported'
     const session = row[sessionIndex]?.trim() || 'open'
+    const broker = brokerIndex >= 0 ? (row[brokerIndex]?.trim().toLowerCase() ?? '') : ''
     const durationSec = durationIndex >= 0 ? parseDurationSeconds(row[durationIndex] || '') : 0
 
     if (!date || !symbol || !side || !Number.isFinite(entry) || !Number.isFinite(exit) || !Number.isFinite(shares) || shares <= 0 || !Number.isFinite(pnl)) {
@@ -130,11 +133,22 @@ export const parseNormalizedTradeCsvText = (csvText: string): ParsedCsvResult =>
     }
 
     const costBasis = entry * shares
+    const pnlResult = calculatePnL({
+      symbol,
+      broker,
+      side: side === 'LONG' ? 'long' : 'short',
+      entry,
+      exit,
+      qty: shares,
+      fees: 0,
+      realizedPnL: pnl,
+    })
 
     trades.push({
       id: crypto.randomUUID(),
       date,
       symbol,
+      broker,
       side,
       setup,
       session,
@@ -157,8 +171,13 @@ export const parseNormalizedTradeCsvText = (csvText: string): ParsedCsvResult =>
       emotionTags: [],
       mistakeTags: [],
       attachments: [],
-      pnl,
-      returnPct: costBasis > 0 ? (pnl / costBasis) * 100 : 0,
+      grossPnl: pnlResult.gross,
+      calculationMethod: pnlResult.calculationMethod,
+      assetClass: pnlResult.specUsed?.assetClass,
+      quantityType: pnlResult.specUsed?.quantityType,
+      realizedPnl: pnl,
+      pnl: pnlResult.net,
+      returnPct: costBasis > 0 ? (pnlResult.net / costBasis) * 100 : 0,
       createdAt: Date.now() + index,
     })
   })

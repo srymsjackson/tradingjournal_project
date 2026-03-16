@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Trade } from '../types'
 import { EMOTION_TAGS, MARKET_CONDITIONS, MISTAKE_TAGS, SESSION_OPTIONS, formatDuration, formatMoney } from '../utils/tradeUtils'
+import { calculatePnL, getQuantityLabel, resolveInstrumentSpec, sideToCalculatorSide } from '../lib/pnlEngine'
 
 type TradeDetailDrawerProps = {
   isOpen: boolean
@@ -43,9 +44,30 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
     const exit = Math.max(0, Number(draft.exit) || 0)
     const shares = Math.max(0, Number(draft.shares) || 0)
     const fees = Math.max(0, Number(draft.fees) || 0)
-    const rawPnl = draft.side === 'LONG' ? (exit - entry) * shares : (entry - exit) * shares
-    const pnl = rawPnl - fees
     const costBasis = entry * shares
+
+    let pnlResult
+    try {
+      pnlResult = calculatePnL({
+        symbol: draft.symbol,
+        broker: draft.broker,
+        side: sideToCalculatorSide(draft.side),
+        entry,
+        exit,
+        qty: shares,
+        fees,
+        realizedPnL: draft.realizedPnl ?? null,
+      })
+    } catch {
+      const fallbackNet = Number.isFinite(Number(draft.pnl)) ? Number(draft.pnl) : 0
+      pnlResult = {
+        gross: fallbackNet + fees,
+        net: fallbackNet,
+        calculationMethod: 'imported' as const,
+      }
+    }
+
+    const pnl = pnlResult.net
 
     return {
       ...draft,
@@ -53,6 +75,7 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
       setup: draft.setup.trim(),
       session: draft.session.trim() || 'Open',
       marketCondition: draft.marketCondition.trim() || 'Trending',
+      broker: (draft.broker || '').trim().toLowerCase(),
       notes: draft.notes.trim(),
       entry,
       exit,
@@ -61,10 +84,37 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
       durationSec: Math.max(0, Math.floor(Number(draft.durationSec) || 0)),
       pnlHigh: Number(draft.pnlHigh) || pnl,
       pnlLow: Number(draft.pnlLow) || pnl,
+      grossPnl: pnlResult.gross,
+      calculationMethod: pnlResult.calculationMethod,
+      assetClass: pnlResult.specUsed?.assetClass,
+      quantityType: pnlResult.specUsed?.quantityType,
       pnl,
       returnPct: costBasis > 0 ? (pnl / costBasis) * 100 : 0,
     }
   }, [draft])
+
+  const calculationError = useMemo(() => {
+    if (!draft) return ''
+
+    try {
+      calculatePnL({
+        symbol: draft.symbol,
+        broker: draft.broker,
+        side: sideToCalculatorSide(draft.side),
+        entry: Number(draft.entry) || 0,
+        exit: Number(draft.exit) || 0,
+        qty: Number(draft.shares) || 0,
+        fees: Number(draft.fees) || 0,
+        realizedPnL: draft.realizedPnl ?? null,
+      })
+      return ''
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Unable to calculate P&L for this trade.'
+    }
+  }, [draft])
+
+  const resolvedSpec = useMemo(() => (draft ? resolveInstrumentSpec(draft.symbol, draft.broker) : null), [draft])
+  const quantityLabel = getQuantityLabel(resolvedSpec?.assetClass, resolvedSpec?.quantityType)
 
   if (!isOpen || !draft || !normalizedTrade) return null
 
@@ -92,6 +142,10 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
               <label>
                 Symbol
                 <input type="text" value={draft.symbol} maxLength={10} onChange={(e) => updateDraft('symbol', e.target.value.toUpperCase())} />
+              </label>
+              <label>
+                Broker (optional)
+                <input type="text" value={draft.broker || ''} maxLength={32} onChange={(e) => updateDraft('broker', e.target.value.toLowerCase())} />
               </label>
               <label>
                 Side
@@ -138,12 +192,21 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
                 <input type="number" min="0" step="0.01" value={draft.exit || ''} onChange={(e) => updateDraft('exit', Number(e.target.value))} />
               </label>
               <label>
-                Shares
+                {quantityLabel.charAt(0).toUpperCase() + quantityLabel.slice(1)}
                 <input type="number" min="0" step="1" value={draft.shares || ''} onChange={(e) => updateDraft('shares', Number(e.target.value))} />
               </label>
               <label>
                 Fees
                 <input type="number" min="0" step="0.01" value={draft.fees || ''} onChange={(e) => updateDraft('fees', Number(e.target.value))} />
+              </label>
+              <label>
+                Realized P&amp;L Override
+                <input
+                  type="number"
+                  step="0.01"
+                  value={draft.realizedPnl ?? ''}
+                  onChange={(e) => updateDraft('realizedPnl', e.target.value === '' ? null : Number(e.target.value))}
+                />
               </label>
               <label>
                 P&amp;L High
@@ -157,6 +220,10 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
 
             <div className="review-metrics-row">
               <article>
+                <small>Gross P&amp;L</small>
+                <p className={(normalizedTrade.grossPnl ?? 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(normalizedTrade.grossPnl ?? normalizedTrade.pnl)}</p>
+              </article>
+              <article>
                 <small>Net P&amp;L</small>
                 <p className={normalizedTrade.pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}>{formatMoney(normalizedTrade.pnl)}</p>
               </article>
@@ -169,6 +236,7 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
                 <p>{formatDuration(normalizedTrade.durationSec)}</p>
               </article>
             </div>
+            {calculationError && <p className="form-error">{calculationError}</p>}
           </section>
 
           <section className="review-block">
@@ -282,6 +350,7 @@ function TradeDetailDrawer({ isOpen, trade, onClose, onSave }: TradeDetailDrawer
           <button
             type="button"
             className="btn primary"
+            disabled={Boolean(calculationError)}
             onClick={() => {
               onSave(normalizedTrade)
               onClose()

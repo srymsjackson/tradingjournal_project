@@ -1,5 +1,6 @@
 import type { Trade } from '../types'
 import { assertSupabaseConfigured, isSupabaseConfigured } from './supabase'
+import { calculatePnL } from './pnlEngine'
 
 type TradeRow = {
   id: string
@@ -70,6 +71,15 @@ const toTrade = (row: TradeRow): Trade => {
   const entry = Number(row.entry) || 0
   const shares = Number(row.shares) || 0
   const pnl = Number.isFinite(Number(row.pnl)) ? Number(row.pnl) : 0
+  const pnlResult = calculatePnL({
+    symbol: row.symbol,
+    side: row.side === 'SHORT' ? 'short' : 'long',
+    entry,
+    exit: Number(row.exit) || 0,
+    qty: shares,
+    fees: Number(row.fees) || 0,
+    realizedPnL: pnl,
+  })
 
   return {
     id: row.id,
@@ -79,6 +89,7 @@ const toTrade = (row: TradeRow): Trade => {
     setup: row.setup || 'imported',
     session: row.session || 'open',
     marketCondition: 'imported',
+    broker: '',
     entry,
     exit: Number(row.exit) || 0,
     shares,
@@ -98,7 +109,12 @@ const toTrade = (row: TradeRow): Trade => {
     emotionTags: [],
     mistakeTags: [],
     attachments: [],
-    returnPct: entry * shares > 0 ? (pnl / (entry * shares)) * 100 : 0,
+    grossPnl: pnlResult.gross,
+    calculationMethod: pnlResult.calculationMethod,
+    assetClass: pnlResult.specUsed?.assetClass,
+    quantityType: pnlResult.specUsed?.quantityType,
+    realizedPnl: pnl,
+    returnPct: entry * shares > 0 ? (pnlResult.net / (entry * shares)) * 100 : 0,
     createdAt: new Date(row.created_at).getTime() || Date.now(),
   }
 }

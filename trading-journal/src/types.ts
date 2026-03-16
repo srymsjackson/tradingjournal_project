@@ -1,4 +1,18 @@
 export type Side = 'LONG' | 'SHORT'
+export type AssetClass = 'futures' | 'forex' | 'cfd' | 'stock' | 'crypto' | 'option'
+export type QuantityType = 'contracts' | 'lots' | 'shares' | 'coins' | 'units'
+
+export type InstrumentSpec = {
+  symbol: string
+  assetClass: AssetClass
+  broker?: string
+  tickSize?: number
+  tickValue?: number
+  pointValue?: number
+  contractSize?: number
+  quantityType?: QuantityType
+  quoteCurrency?: string
+}
 
 export type DashboardTab = 'overview' | 'distribution' | 'trend' | 'symbols'
 
@@ -63,6 +77,12 @@ export type Trade = {
   emotionTags: string[]
   mistakeTags: string[]
   attachments: TradeAttachment[]
+  broker?: string
+  assetClass?: AssetClass
+  quantityType?: QuantityType
+  grossPnl?: number
+  calculationMethod?: 'imported' | 'calculated'
+  realizedPnl?: number | null
   pnl: number
   returnPct: number
   createdAt: number
@@ -93,6 +113,8 @@ export type TradeFormData = {
   brokeRules: boolean
   emotionTags: string[]
   mistakeTags: string[]
+  broker: string
+  realizedPnl: number | null
 }
 
 export type TradeStats = {

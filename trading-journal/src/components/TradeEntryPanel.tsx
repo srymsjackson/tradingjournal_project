@@ -1,6 +1,7 @@
 import type { TradeFormData } from '../types'
 import { COMMON_SETUPS, EMOTION_TAGS, MARKET_CONDITIONS, MISTAKE_TAGS, SESSION_OPTIONS, findPlaybookSetup } from '../utils/tradeUtils'
 import { SETUP_PLAYBOOK } from '../data/setupPlaybook'
+import { calculatePnL, getQuantityLabel, resolveInstrumentSpec, sideToCalculatorSide } from '../lib/pnlEngine'
 
 type TradeEntryPanelProps = {
   form: TradeFormData
@@ -28,6 +29,8 @@ function TradeEntryPanel({
   onLoadSample,
 }: TradeEntryPanelProps) {
   const selectedPlaybook = findPlaybookSetup(form.setup)
+  const resolvedSpec = resolveInstrumentSpec(form.symbol, form.broker)
+  const quantityLabel = getQuantityLabel(resolvedSpec?.assetClass, resolvedSpec?.quantityType)
 
   const toggleTag = (field: 'emotionTags' | 'mistakeTags', tag: string) => {
     const currentTags = form[field]
@@ -41,7 +44,23 @@ function TradeEntryPanel({
     onSubmit(event, Boolean(addAnother))
   }
 
-  const netPnlPreview = (form.side === 'LONG' ? (form.exit - form.entry) * form.shares : (form.entry - form.exit) * form.shares) - form.fees
+  let netPnlPreview = 0
+  let netPnlPreviewError = ''
+
+  try {
+    netPnlPreview = calculatePnL({
+      symbol: form.symbol,
+      broker: form.broker,
+      side: sideToCalculatorSide(form.side),
+      entry: form.entry,
+      exit: form.exit,
+      qty: form.shares,
+      fees: form.fees,
+      realizedPnL: form.realizedPnl,
+    }).net
+  } catch (error) {
+    netPnlPreviewError = error instanceof Error ? error.message : 'Unable to calculate P&L for this symbol yet.'
+  }
 
   return (
     <section className="panel form-panel">
@@ -63,6 +82,20 @@ function TradeEntryPanel({
               <input type="date" value={form.date} onChange={(e) => onUpdateForm('date', e.target.value)} required />
             </label>
             <label>
+              Broker (optional)
+              <input
+                type="text"
+                placeholder="tradovate"
+                value={form.broker}
+                onChange={(e) => onUpdateForm('broker', e.target.value.toLowerCase())}
+                maxLength={32}
+                autoComplete="off"
+              />
+            </label>
+          </div>
+
+          <div className="grid two-col compact-grid">
+            <label>
               Symbol
               <input
                 type="text"
@@ -75,6 +108,16 @@ function TradeEntryPanel({
                 autoComplete="off"
               />
               <small className="field-hint">Typed symbols are remembered for quick reuse.</small>
+            </label>
+            <label>
+              Realized P&amp;L Override (optional)
+              <input
+                type="number"
+                step="0.01"
+                value={form.realizedPnl ?? ''}
+                onChange={(e) => onUpdateForm('realizedPnl', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="Use broker-reported net P&L"
+              />
             </label>
           </div>
 
@@ -238,7 +281,7 @@ function TradeEntryPanel({
               />
             </label>
             <label>
-              Shares
+              {quantityLabel.charAt(0).toUpperCase() + quantityLabel.slice(1)}
               <input
                 type="number"
                 min="1"
@@ -290,6 +333,7 @@ function TradeEntryPanel({
             <span>Net P&amp;L</span>
             <strong className={netPnlPreview >= 0 ? 'pnl-positive' : 'pnl-negative'}>{Number.isFinite(netPnlPreview) ? `$${netPnlPreview.toFixed(2)}` : '$0.00'}</strong>
           </div>
+          {netPnlPreviewError && <p className="form-error">{netPnlPreviewError}</p>}
           <div className="grid two-col compact-grid">
             <label>
               P&amp;L High ($)

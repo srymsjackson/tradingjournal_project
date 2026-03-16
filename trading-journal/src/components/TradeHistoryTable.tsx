@@ -169,7 +169,7 @@ function TradeHistoryTable({ trades, onDeleteTrade, onUpdateTrade }: TradeHistor
               </th>
               <th>
                 <button type="button" className="table-sort-btn" onClick={() => setSorting('shares')}>
-                  Shares <span>{sortIndicator('shares')}</span>
+                  Qty <span>{sortIndicator('shares')}</span>
                 </button>
               </th>
               <th>

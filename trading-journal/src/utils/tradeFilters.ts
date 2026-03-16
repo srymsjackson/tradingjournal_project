@@ -1,5 +1,6 @@
 import type { SetupPlaybookEntry, TimeFilterPreset, Trade, TradeFormData } from '../types'
 import { SETUP_PLAYBOOK } from '../data/setupPlaybook'
+import { calculatePnL, sideToCalculatorSide } from '../lib/pnlEngine'
 
 export const STORAGE_KEY = 'pulse-journal-trades'
 export const SYMBOLS_KEY = 'pulse-journal-symbols'
@@ -50,6 +51,8 @@ export const initialForm = (): TradeFormData => ({
   brokeRules: false,
   emotionTags: [],
   mistakeTags: [],
+  broker: '',
+  realizedPnl: null,
 })
 
 export const loadTrades = (): Trade[] => {
@@ -73,23 +76,57 @@ export const loadTrades = (): Trade[] => {
       const pnlHigh = Number.isFinite(Number(item.pnlHigh)) ? Number(item.pnlHigh) : pnl
       const pnlLow = Number.isFinite(Number(item.pnlLow)) ? Number(item.pnlLow) : pnl
       const durationSec = Number.isFinite(Number(item.durationSec)) && Number(item.durationSec) >= 0 ? Number(item.durationSec) : 0
+      const broker = String(item.broker || '').trim()
+
+      let netPnl = hasProvidedPnl ? Number(item.pnl) : 0
+      let grossPnl: number | undefined = Number.isFinite(Number(item.grossPnl)) ? Number(item.grossPnl) : undefined
+      let assetClass = typeof item.assetClass === 'string' ? item.assetClass : undefined
+      let quantityType = typeof item.quantityType === 'string' ? item.quantityType : undefined
+      let calculationMethod: 'imported' | 'calculated' | undefined = item.calculationMethod === 'calculated' ? 'calculated' : item.calculationMethod === 'imported' ? 'imported' : undefined
+
+      try {
+        const pnlResult = calculatePnL({
+          symbol: String(item.symbol || ''),
+          broker,
+          side: sideToCalculatorSide(String(item.side || '').toUpperCase() === 'SHORT' ? 'SHORT' : 'LONG'),
+          entry,
+          exit,
+          qty: shares,
+          fees,
+          realizedPnL: hasProvidedPnl ? Number(item.pnl) : null,
+        })
+
+        netPnl = pnlResult.net
+        grossPnl = pnlResult.gross
+        assetClass = pnlResult.specUsed?.assetClass ?? assetClass
+        quantityType = pnlResult.specUsed?.quantityType ?? quantityType
+        calculationMethod = pnlResult.calculationMethod
+      } catch {
+        // Fail-safe fallback for legacy records with missing specs: do not silently fabricate values.
+      }
 
       return {
         ...item,
         entry,
+        broker,
         session: String(item.session || 'Open'),
         marketCondition: String(item.marketCondition || 'Trending'),
         exit,
         shares,
         fees,
-        pnl,
+        pnl: netPnl,
+        grossPnl,
+        calculationMethod,
+        assetClass,
+        quantityType,
+        realizedPnl: hasProvidedPnl ? Number(item.pnl) : null,
         pnlHigh,
         pnlLow,
         durationSec,
         returnPct: Number.isFinite(Number(item.returnPct))
           ? Number(item.returnPct)
           : entry * shares > 0
-            ? (pnl / (entry * shares)) * 100
+            ? (netPnl / (entry * shares)) * 100
             : 0,
         ruleFollowed: item.ruleFollowed !== false,
         setupWasValid: item.setupWasValid !== false,

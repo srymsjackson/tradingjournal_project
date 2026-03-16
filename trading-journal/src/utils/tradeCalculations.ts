@@ -1,4 +1,5 @@
 import type { ReviewInsights, SampleTradeInput, Side, SymbolStat, Trade, TradeFormData, TradeStats, WeeklyReview } from '../types'
+import { calculatePnL, sideToCalculatorSide } from '../lib/pnlEngine'
 
 export const formatMoney = (value: number) =>
   new Intl.NumberFormat('en-US', {
@@ -26,10 +27,22 @@ export const usDateToIso = (value: string) => {
 
 export const buildTradeFromForm = (form: TradeFormData): Trade => {
   const symbol = form.symbol.trim().toUpperCase()
+  const broker = form.broker.trim().toLowerCase()
   const setup = form.setup.trim()
   const notes = form.notes.trim()
-  const rawPnl = form.side === 'LONG' ? (form.exit - form.entry) * form.shares : (form.entry - form.exit) * form.shares
-  const pnl = rawPnl - form.fees
+
+  const pnlResult = calculatePnL({
+    symbol,
+    broker,
+    side: sideToCalculatorSide(form.side),
+    entry: form.entry,
+    exit: form.exit,
+    qty: form.shares,
+    fees: form.fees,
+    realizedPnL: form.realizedPnl,
+  })
+
+  const pnl = pnlResult.net
   const costBasis = form.entry * form.shares
   const durationTotalSec = form.durationMin * 60 + form.durationSec
 
@@ -38,6 +51,7 @@ export const buildTradeFromForm = (form: TradeFormData): Trade => {
     date: form.date,
     symbol,
     side: form.side,
+    broker,
     setup,
     session: form.session,
     marketCondition: form.marketCondition,
@@ -59,6 +73,11 @@ export const buildTradeFromForm = (form: TradeFormData): Trade => {
     emotionTags: form.emotionTags,
     mistakeTags: form.mistakeTags,
     attachments: [],
+    grossPnl: pnlResult.gross,
+    calculationMethod: pnlResult.calculationMethod,
+    assetClass: pnlResult.specUsed?.assetClass,
+    quantityType: pnlResult.specUsed?.quantityType,
+    realizedPnl: form.realizedPnl,
     pnl,
     returnPct: costBasis > 0 ? (pnl / costBasis) * 100 : 0,
     createdAt: Date.now(),
@@ -72,6 +91,7 @@ export const createFormFromTrade = (trade: Trade): TradeFormData => ({
   setup: trade.setup,
   session: trade.session,
   marketCondition: trade.marketCondition,
+  broker: trade.broker || '',
   entry: trade.entry,
   exit: trade.exit,
   shares: trade.shares,
@@ -90,13 +110,24 @@ export const createFormFromTrade = (trade: Trade): TradeFormData => ({
   brokeRules: trade.brokeRules,
   emotionTags: [...trade.emotionTags],
   mistakeTags: [...trade.mistakeTags],
+  realizedPnl: trade.realizedPnl ?? null,
 })
 
 export const buildSeedTradesFromSample = (sampleTrades: SampleTradeInput[]): Trade[] =>
   sampleTrades.map((item, index) => {
     const side: Side = toSide(item.side)
     const rawPnl = side === 'LONG' ? (item.exit - item.entry) * item.shares : (item.entry - item.exit) * item.shares
-    const pnl = rawPnl - item.fees
+    const seedNet = rawPnl - item.fees
+    const pnlResult = calculatePnL({
+      symbol: item.symbol.trim().toUpperCase(),
+      side: sideToCalculatorSide(side),
+      entry: item.entry,
+      exit: item.exit,
+      qty: item.shares,
+      fees: item.fees,
+      realizedPnL: seedNet,
+    })
+    const pnl = pnlResult.net
     const costBasis = item.entry * item.shares
 
     return {
@@ -104,6 +135,7 @@ export const buildSeedTradesFromSample = (sampleTrades: SampleTradeInput[]): Tra
       date: usDateToIso(item.date),
       symbol: item.symbol.trim().toUpperCase(),
       side,
+      broker: '',
       setup: item.setup,
       session: 'Open',
       marketCondition: 'Trending',
@@ -125,6 +157,11 @@ export const buildSeedTradesFromSample = (sampleTrades: SampleTradeInput[]): Tra
       emotionTags: [],
       mistakeTags: [],
       attachments: [],
+      grossPnl: pnlResult.gross,
+      calculationMethod: pnlResult.calculationMethod,
+      assetClass: pnlResult.specUsed?.assetClass,
+      quantityType: pnlResult.specUsed?.quantityType,
+      realizedPnl: seedNet,
       pnl,
       returnPct: costBasis > 0 ? (pnl / costBasis) * 100 : 0,
       createdAt: Date.now() + index,
