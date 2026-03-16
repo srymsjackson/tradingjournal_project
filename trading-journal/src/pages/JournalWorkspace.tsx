@@ -21,7 +21,7 @@ import {
 } from '../utils/tradeUtils'
 import { validateTradeForm } from '../utils/tradeValidation'
 import { parseNormalizedTradeCsvFile } from '../utils/parseNormalizedTradeCsv'
-import { clearUserTradesFromCloud, loadUserTradesFromCloud, saveUserTradesToCloud } from '../lib/trades'
+import { clearUserTradesFromCloud, loadUserTradesFromCloud } from '../lib/trades'
 import { deleteCurrentAccount, updateUserPassword } from '../auth/session'
 import { clearUserPreferencesCache, defaultUserPreferences, loadUserPreferences, saveUserPreferences, type UserPreferences } from '../lib/userPreferences'
 
@@ -59,9 +59,9 @@ const darkenHex = (hex: string, percent: number) => {
 }
 
 function JournalWorkspace({ userId, userEmail = '', onSignOut, initialSection = 'dashboard', initialTool = null, showStandaloneHeader = true }: JournalWorkspaceProps) {
-  const [trades, setTrades] = useState<Trade[]>(() => loadTrades())
-  const [savedSymbols, setSavedSymbols] = useState<string[]>(() => loadSymbols())
-  const [savedSetups, setSavedSetups] = useState<string[]>(() => loadSetups())
+  const [trades, setTrades] = useState<Trade[]>(() => loadTrades(userId))
+  const [savedSymbols, setSavedSymbols] = useState<string[]>(() => loadSymbols(userId))
+  const [savedSetups, setSavedSetups] = useState<string[]>(() => loadSetups(userId))
   const [form, setForm] = useState<TradeFormData>(() => initialForm())
   const [formError, setFormError] = useState<string>('')
   const [filterSymbol, setFilterSymbol] = useState<string>('ALL')
@@ -163,12 +163,11 @@ function JournalWorkspace({ userId, userEmail = '', onSignOut, initialSection = 
       .then((cloudTrades) => {
         if (isCancelled) return
         if (cloudTrades.length === 0) {
-          const localTrades = loadTrades()
-          if (localTrades.length > 0) {
-            void saveUserTradesToCloud(userId, localTrades).catch((error) => {
-              console.warn('failed to seed cloud trades from local cache', error)
-            })
-          }
+          // Brand-new accounts should remain empty instead of inheriting prior cached trades.
+          clearPersistedData()
+          setTrades([])
+          setSavedSymbols([])
+          setSavedSetups([])
           return
         }
 
@@ -183,7 +182,7 @@ function JournalWorkspace({ userId, userEmail = '', onSignOut, initialSection = 
     return () => {
       isCancelled = true
     }
-  }, [userId])
+  }, [clearPersistedData, userId])
 
   const symbolOptions = useMemo(
     () => normalizeSymbols([...savedSymbols, ...trades.map((trade) => trade.symbol), ...preferences.tradingPreferences.favoriteSymbols]),

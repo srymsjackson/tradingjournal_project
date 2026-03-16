@@ -6,6 +6,14 @@ export const STORAGE_KEY = 'pulse-journal-trades'
 export const SYMBOLS_KEY = 'pulse-journal-symbols'
 export const SETUPS_KEY = 'pulse-journal-setups'
 
+const scopedJournalKey = (baseKey: string, userId?: string) => (userId ? `${baseKey}_${userId}` : baseKey)
+
+export const getJournalStorageKeys = (userId?: string) => ({
+  tradesKey: scopedJournalKey(STORAGE_KEY, userId),
+  symbolsKey: scopedJournalKey(SYMBOLS_KEY, userId),
+  setupsKey: scopedJournalKey(SETUPS_KEY, userId),
+})
+
 export const COMMON_SETUPS = Array.from(new Set([...SETUP_PLAYBOOK.map((item) => item.name), 'VWAP Reject', 'Trend Pullback', 'Opening Range', 'Asia Breakout', 'Range Reject']))
 
 const normalizedSetupMap = Object.fromEntries(SETUP_PLAYBOOK.map((item) => [item.name.trim().toLowerCase(), item]))
@@ -55,9 +63,10 @@ export const initialForm = (): TradeFormData => ({
   realizedPnl: null,
 })
 
-export const loadTrades = (): Trade[] => {
+export const loadTrades = (userId?: string): Trade[] => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const { tradesKey } = getJournalStorageKeys(userId)
+    const raw = localStorage.getItem(tradesKey)
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
@@ -159,9 +168,10 @@ export const loadTrades = (): Trade[] => {
   }
 }
 
-export const loadSymbols = (): string[] => {
+export const loadSymbols = (userId?: string): string[] => {
   try {
-    const raw = localStorage.getItem(SYMBOLS_KEY)
+    const { symbolsKey } = getJournalStorageKeys(userId)
+    const raw = localStorage.getItem(symbolsKey)
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
@@ -178,9 +188,10 @@ export const normalizeSymbols = (symbols: string[]) =>
 export const normalizeSetups = (setups: string[]) =>
   Array.from(new Set(setups.map((item) => item.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b))
 
-export const loadSetups = (): string[] => {
+export const loadSetups = (userId?: string): string[] => {
   try {
-    const raw = localStorage.getItem(SETUPS_KEY)
+    const { setupsKey } = getJournalStorageKeys(userId)
+    const raw = localStorage.getItem(setupsKey)
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []

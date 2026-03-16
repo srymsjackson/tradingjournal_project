@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import type { Trade } from '../types'
-import { normalizeSetups, normalizeSymbols, SETUPS_KEY, STORAGE_KEY, SYMBOLS_KEY } from '../utils/tradeUtils'
+import { getJournalStorageKeys, normalizeSetups, normalizeSymbols } from '../utils/tradeUtils'
 import { saveUserTradesToCloud } from '../lib/trades'
 
 type UseJournalPersistenceArgs = {
@@ -11,10 +11,12 @@ type UseJournalPersistenceArgs = {
 }
 
 export const useJournalPersistence = ({ setTrades, setSavedSymbols, setSavedSetups, userId }: UseJournalPersistenceArgs) => {
+  const { tradesKey, symbolsKey, setupsKey } = getJournalStorageKeys(userId)
+
   const persistTrades = useCallback(
     (nextTrades: Trade[]) => {
       setTrades(nextTrades)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTrades))
+      localStorage.setItem(tradesKey, JSON.stringify(nextTrades))
 
       if (userId) {
         void saveUserTradesToCloud(userId, nextTrades).catch((error) => {
@@ -22,32 +24,32 @@ export const useJournalPersistence = ({ setTrades, setSavedSymbols, setSavedSetu
         })
       }
     },
-    [setTrades, userId],
+    [setTrades, tradesKey, userId],
   )
 
   const persistSymbols = useCallback(
     (nextSymbols: string[]) => {
       const normalized = normalizeSymbols(nextSymbols)
       setSavedSymbols(normalized)
-      localStorage.setItem(SYMBOLS_KEY, JSON.stringify(normalized))
+      localStorage.setItem(symbolsKey, JSON.stringify(normalized))
     },
-    [setSavedSymbols],
+    [setSavedSymbols, symbolsKey],
   )
 
   const persistSetups = useCallback(
     (nextSetups: string[]) => {
       const normalized = normalizeSetups(nextSetups)
       setSavedSetups(normalized)
-      localStorage.setItem(SETUPS_KEY, JSON.stringify(normalized))
+      localStorage.setItem(setupsKey, JSON.stringify(normalized))
     },
-    [setSavedSetups],
+    [setSavedSetups, setupsKey],
   )
 
   const clearPersistedData = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY)
-    localStorage.removeItem(SYMBOLS_KEY)
-    localStorage.removeItem(SETUPS_KEY)
-  }, [])
+    localStorage.removeItem(tradesKey)
+    localStorage.removeItem(symbolsKey)
+    localStorage.removeItem(setupsKey)
+  }, [setupsKey, symbolsKey, tradesKey])
 
   return {
     persistTrades,
