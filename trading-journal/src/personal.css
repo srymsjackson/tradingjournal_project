@@ -1,0 +1,243 @@
+:root {
+  --dash-bg: #0b1118;
+  --dash-panel: #121b25;
+  --dash-panel-soft: #182330;
+  --dash-line: #283646;
+  --dash-ink: #deebf6;
+  --dash-muted: #91a5b9;
+  --dash-accent: #3b8f99;
+  --dash-good: #56b89a;
+  --dash-bad: #d98272;
+}
+
+.trader-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(59, 143, 153, 0.18) 0, transparent 30%),
+    radial-gradient(circle at 88% 8%, rgba(143, 87, 58, 0.2) 0, transparent 32%),
+    linear-gradient(160deg, #090f16, #0d141d 52%, #0a1018);
+  color: var(--dash-ink);
+  max-width: 100%;
+  padding: 1.25rem;
+}
+
+.trader-header {
+  border-bottom: 1px solid var(--dash-line);
+  padding-bottom: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.trader-header h1 {
+  letter-spacing: 0.04em;
+}
+
+.trader-header p,
+.panel-subtitle,
+.empty-state,
+.inline-status {
+  color: var(--dash-muted);
+}
+
+.trader-nav {
+  margin-bottom: 1rem;
+}
+
+.route-nav-item {
+  border-color: var(--dash-line);
+  background: var(--dash-panel-soft);
+  color: var(--dash-ink);
+}
+
+.route-nav-item.active,
+.route-nav-item:hover {
+  border-color: color-mix(in srgb, var(--dash-accent), white 20%);
+  background: color-mix(in srgb, var(--dash-accent), black 75%);
+}
+
+.dashboard-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel-shell {
+  border: 1px solid var(--dash-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent), var(--dash-panel);
+  border-radius: 14px;
+  padding: 0.95rem;
+}
+
+.panel-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stats-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.stats-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stats-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metric-card {
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  background: var(--dash-panel-soft);
+  padding: 0.75rem;
+}
+
+.metric-card p {
+  margin: 0;
+  color: var(--dash-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+}
+
+.metric-card h3 {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.35rem, 2.8vw, 1.8rem);
+}
+
+.positive {
+  color: var(--dash-good);
+}
+
+.negative {
+  color: var(--dash-bad);
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.form-cols {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.form-cols.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-cols.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.form-cols.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+label {
+  color: var(--dash-ink);
+  font-size: 0.88rem;
+}
+
+input,
+select,
+textarea {
+  background: #0d141d;
+  border: 1px solid var(--dash-line);
+  color: var(--dash-ink);
+}
+
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.check-grid label {
+  border: 1px dashed var(--dash-line);
+  border-radius: 10px;
+  padding: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn.danger {
+  border: 1px solid color-mix(in srgb, var(--dash-bad), white 35%);
+  background: color-mix(in srgb, var(--dash-bad), black 78%);
+  color: #ffd9d3;
+}
+
+.inline-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.list-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.list-grid li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed var(--dash-line);
+  padding-bottom: 0.35rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 920px;
+}
+
+.grid-table th,
+.grid-table td {
+  border-bottom: 1px solid var(--dash-line);
+  padding: 0.52rem;
+  text-align: left;
+}
+
+.grid-table th {
+  font-size: 0.76rem;
+  color: var(--dash-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.status-tag {
+  border: 1px solid var(--dash-line);
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.status-tag.ok {
+  color: var(--dash-good);
+}
+
+.status-tag.warn {
+  color: var(--dash-bad);
+}
+
+@media (max-width: 980px) {
+  .stats-grid.three,
+  .stats-grid.two,
+  .form-cols.two,
+  .form-cols.three,
+  .form-cols.four,
+  .check-grid {
+    grid-template-columns: 1fr;
+  }
+}

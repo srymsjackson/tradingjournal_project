@@ -13,30 +13,27 @@ const getTypeDurationMs = (text: string) => {
 }
 
 function HomePage() {
-  const [shouldAnimate, setShouldAnimate] = useState(false)
-  const [hideCursorAfterTyping, setHideCursorAfterTyping] = useState(false)
+  const [shouldAnimate] = useState(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const hasPlayed = sessionStorage.getItem(TITLE_TYPED_ONCE_KEY) === '1'
+
+    if (reduceMotion || hasPlayed) return false
+    sessionStorage.setItem(TITLE_TYPED_ONCE_KEY, '1')
+    return true
+  })
+  const [hideCursorAfterTyping, setHideCursorAfterTyping] = useState(!shouldAnimate)
 
   const typeDurationMs = useMemo(() => getTypeDurationMs(WELCOME_TITLE), [])
 
   useEffect(() => {
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const hasPlayed = sessionStorage.getItem(TITLE_TYPED_ONCE_KEY) === '1'
-
-    if (reduceMotion || hasPlayed) {
-      setShouldAnimate(false)
-      setHideCursorAfterTyping(true)
-      return
-    }
-
-    setShouldAnimate(true)
-    sessionStorage.setItem(TITLE_TYPED_ONCE_KEY, '1')
+    if (!shouldAnimate) return
 
     const cursorHideTimer = window.setTimeout(() => {
       setHideCursorAfterTyping(true)
     }, typeDurationMs + 900)
 
     return () => window.clearTimeout(cursorHideTimer)
-  }, [typeDurationMs])
+  }, [shouldAnimate, typeDurationMs])
 
   return (
     <main className="public-shell">
