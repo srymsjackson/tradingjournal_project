@@ -10,8 +10,12 @@ import DashboardPage from './pages/DashboardPage'
 import JournalPage from './pages/JournalPage'
 import ReviewPage from './pages/ReviewPage'
 import SettingsPage from './pages/SettingsPage'
+import AnalyticsPage from './pages/AnalyticsPage'
+import AccountsPage from './pages/AccountsPage'
 import { getCurrentSession, onAuthStateChange, signOutUser, signInWithEmailPassword, signUpWithEmailPassword } from './auth/session'
+import { DashboardDataProvider } from './context/DashboardDataContext'
 import './App.css'
+import './personal.css'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -99,7 +103,9 @@ function App() {
           path="/app"
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <AppLayout onLogout={handleLogout} />
+              <DashboardDataProvider key={session?.user.id ?? 'anonymous'} userId={session?.user.id ?? ''}>
+                <AppLayout onLogout={handleLogout} />
+              </DashboardDataProvider>
             </ProtectedRoute>
           }
         >
@@ -110,12 +116,14 @@ function App() {
           />
           <Route
             path="journal"
-            element={<JournalPage userId={session?.user.id ?? ''} userEmail={session?.user.email ?? ''} onSignOut={handleLogout} />}
+            element={<JournalPage />}
           />
           <Route
             path="trade-history"
-            element={<ReviewPage userId={session?.user.id ?? ''} userEmail={session?.user.email ?? ''} onSignOut={handleLogout} />}
+            element={<ReviewPage />}
           />
+          <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="accounts" element={<AccountsPage />} />
           <Route path="review" element={<Navigate to="/app/trade-history" replace />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
